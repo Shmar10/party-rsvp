@@ -37,9 +37,9 @@ rsvpForm.addEventListener('submit', async (e) => {
 
     const formData = new FormData(rsvpForm);
     const rsvpData = {
-        name: formData.get('name'),
-        guests: parseInt(formData.get('guests')),
-        dietary_notes: formData.get('dietary')
+        guest_name: formData.get('name'),
+        party_size: parseInt(formData.get('guests')),
+        notes: formData.get('dietary')
     };
 
     try {
