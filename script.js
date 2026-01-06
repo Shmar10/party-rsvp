@@ -36,10 +36,23 @@ rsvpForm.addEventListener('submit', async (e) => {
     messageEl.classList.add('hidden');
 
     const formData = new FormData(rsvpForm);
+    const attending = formData.get('attending');
+    const guestName = formData.get('name');
+
+    // Check for duplicate submission (basic client-side check)
+    const submittedKey = `rsvp_submitted_${guestName.toLowerCase().replace(/\s+/g, '_')}`;
+    if (localStorage.getItem(submittedKey)) {
+        showMessage('It looks like you already submitted an RSVP! Contact the host if you need to make changes.', 'error');
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+        return;
+    }
+
     const rsvpData = {
-        guest_name: formData.get('name'),
+        guest_name: guestName,
         party_size: parseInt(formData.get('guests')),
-        notes: formData.get('dietary')
+        notes: formData.get('dietary'),
+        attending: attending
     };
 
     try {
@@ -49,12 +62,14 @@ rsvpForm.addEventListener('submit', async (e) => {
 
         if (error) throw error;
 
-        showMessage('Thanks for the RSVP! We can\'t wait to see you there.', 'success');
-        rsvpForm.reset();
+        // Mark as submitted
+        localStorage.setItem(submittedKey, 'true');
+
+        // Redirect to thank you page with attending status
+        window.location.href = `thank-you.html?attending=${attending}`;
     } catch (err) {
         console.error('Error submitting RSVP:', err);
         showMessage('Oops! Something went wrong. Please try again.', 'error');
-    } finally {
         submitBtn.classList.remove('loading');
         submitBtn.disabled = false;
     }
