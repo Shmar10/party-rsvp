@@ -2,8 +2,8 @@
 const SUPABASE_URL = 'https://yupowktiegsjzcymqhkw.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1cG93a3RpZWdzanpjeW1xaGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2MjA3NTAsImV4cCI6MjA4MzE5Njc1MH0.AiqEpxjmMc3rczfzHx8b-omVAwJUhflIL849nNTqDwQ';
 
-// Initialize Supabase client
-const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+// Initialize Supabase client (renamed to avoid browser extension conflicts)
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // DOM Elements
 const rsvpForm = document.getElementById('rsvpForm');
@@ -25,7 +25,7 @@ function showMessage(text, type) {
 rsvpForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (!supabase) {
+    if (!supabaseClient) {
         showMessage('Supabase failed to initialize. Please check your configuration.', 'error');
         return;
     }
@@ -43,7 +43,7 @@ rsvpForm.addEventListener('submit', async (e) => {
     };
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('rsvps')
             .insert([rsvpData]);
 
