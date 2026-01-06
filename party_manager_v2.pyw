@@ -637,15 +637,15 @@ class PartyManagerApp:
         
         # Update time
         content = re.sub(
-            r'<span class="icon">⏰</span>\s*<span>.*?</span>',
-            f'<span class="icon">⏰</span><span>{self.event_time.get()}</span>',
+            r'<div class="detail-item">\s*<span class="icon">⏰</span>\s*<span>.*?</span>',
+            f'<div class="detail-item"><span class="icon">⏰</span><span>{self.event_time.get()}</span>',
             content
         )
         
         # Update location
         content = re.sub(
-            r'<span class="icon">📍</span>\s*<span>.*?</span>',
-            f'<span class="icon">📍</span><span>{self.event_location.get()}</span>',
+            r'<div class="detail-item">\s*<span class="icon">📍</span>\s*<span>.*?</span>',
+            f'<div class="detail-item"><span class="icon">📍</span><span>{self.event_location.get()}</span>',
             content
         )
         
@@ -677,8 +677,8 @@ class PartyManagerApp:
             content
         )
         
-        # Replace the event-details section with the image AND hidden metadata for calendar
-        # We use display:none on the detail-items so they are in the DOM for script.js but invisible
+        # Replace the entire event-details section including any stray items after it
+        # This regex eats everything until the rsvp-card starts to ensure a clean slate
         image_html = f'''<div class="event-details">
                 <img src="{img_filename}" alt="Event Details" style="max-width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                 <div class="detail-item" style="display: none;">
@@ -692,9 +692,10 @@ class PartyManagerApp:
                 </div>
             </div>'''
         
+        # Robust replacement that cleans up the hero section
         content = re.sub(
-            r'<div class="event-details">.*?</div>',
-            image_html,
+            r'<div class="event-details">.*?</header>',
+            f'{image_html}\n        </header>',
             content,
             flags=re.DOTALL
         )

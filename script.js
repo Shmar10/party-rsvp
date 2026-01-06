@@ -72,9 +72,21 @@ rsvpForm.addEventListener('submit', async (e) => {
 
         // Redirect to thank you page with all event details for calendar
         const pageEventName = document.querySelector('.container').getAttribute('data-event-name') || eventName;
-        const pageDate = document.querySelector('.event-details .detail-item:nth-child(1) span:last-child')?.textContent || '';
-        const pageTime = document.querySelector('.event-details .detail-item:nth-child(2) span:last-child')?.textContent || '';
-        const pageLocation = document.querySelector('.event-details .detail-item:nth-child(3) span:last-child')?.textContent || '';
+
+        // Helper to find detail text by icon emoji
+        const findDetail = (emoji) => {
+            const items = document.querySelectorAll('.detail-item');
+            for (const item of items) {
+                if (item.textContent.includes(emoji)) {
+                    return item.querySelector('span:last-child')?.textContent || '';
+                }
+            }
+            return '';
+        };
+
+        const pageDate = findDetail('📅');
+        const pageTime = findDetail('⏰');
+        const pageLocation = findDetail('📍');
         const params = new URLSearchParams({
             attending: attending,
             event: pageEventName,
