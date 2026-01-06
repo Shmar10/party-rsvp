@@ -1,0 +1,3 @@
+@echo off
+echo Starting Party Manager v2.0...
+pythonw party_manager_v2.pyw

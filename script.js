@@ -55,6 +55,7 @@ rsvpForm.addEventListener('submit', async (e) => {
         guest_name: guestName,
         party_size: parseInt(formData.get('guests')),
         notes: formData.get('dietary'),
+        message: formData.get('message_host'),
         attending: attending,
         event_name: eventName
     };
