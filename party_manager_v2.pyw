@@ -651,6 +651,13 @@ class PartyManagerApp:
             content
         )
         
+        # Clear event description (subtitle) in image mode
+        content = re.sub(
+            r'<p class="subtitle">.*?</p>',
+            '<p class="subtitle"></p>',
+            content
+        )
+        
         # Replace the event-details section with an image
         image_html = f'''<div class="event-details">
                 <img src="{img_filename}" alt="Event Details" style="max-width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
