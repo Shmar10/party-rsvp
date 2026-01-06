@@ -74,6 +74,29 @@
         .back-btn:hover {
             transform: scale(1.05);
         }
+
+        .calendar-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            transition: transform 0.2s;
+            margin: 10px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .calendar-btn:hover {
+            transform: scale(1.05);
+            background: #218838;
+        }
+
+        .btn-container {
+            margin-top: 20px;
+        }
     </style>
 </head>
 
@@ -84,36 +107,62 @@
         <div class="blob blob-3"></div>
     </div>
 
-    <main class="container thank-you-container">
+    <main class="container thank-you-container" data-event-name="" data-event-date="" data-event-time=""
+        data-event-location="">
         <div class="emoji" id="emoji">🎉</div>
         <h1 class="thank-you-message" id="message">Thank You!</h1>
         <p class="thank-you-text" id="text"></p>
 
         <div class="event-reminder" id="reminder" style="display: none;">
             <h3 style="margin-top: 0; color: #667eea;">Event Details:</h3>
-            <p style="margin: 10px 0;"><strong>📅 Date:</strong> Saturday, Jan 24th</p>
-            <p style="margin: 10px 0;"><strong>⏰ Time:</strong> 6:00 PM</p>
-            <p style="margin: 10px 0;"><strong>📍 Location:</strong> The Martin's Lanai</p>
+            <p style="margin: 10px 0;"><strong>📅 Date:</strong> <span id="detailDate">Saturday, Jan 24th</span></p>
+            <p style="margin: 10px 0;"><strong>⏰ Time:</strong> <span id="detailTime">6:00 PM</span></p>
+            <p style="margin: 10px 0;"><strong>📍 Location:</strong> <span id="detailLocation">The Martin's Lanai</span>
+            </p>
         </div>
 
-        <a href="index.html" class="back-btn">← Back to Home</a>
+        <div class="btn-container">
+            <button class="calendar-btn" id="addToCalendarBtn" style="display: none;" onclick="addToCalendar()">
+                📅 Add to Calendar
+            </button>
+            <br>
+            <a href="index.html" class="back-btn">← Back to Home</a>
+        </div>
     </main>
 
     <script>
-        // Get attending status from URL parameter
+        // Get attending status and event details from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const attending = urlParams.get('attending');
+        const eventName = urlParams.get('event') || 'Party Event';
+        const eventDate = urlParams.get('date') || 'Saturday, Jan 24th';
+        const eventTime = urlParams.get('time') || '6:00 PM';
+        const eventLocation = urlParams.get('location') || 'TBD';
 
         const emojiEl = document.getElementById('emoji');
         const messageEl = document.getElementById('message');
         const textEl = document.getElementById('text');
         const reminderEl = document.getElementById('reminder');
+        const addCalendarBtn = document.getElementById('addToCalendarBtn');
+
+        // Store event details in data attributes
+        const mainEl = document.querySelector('.thank-you-container');
+        mainEl.setAttribute('data-event-name', eventName);
+        mainEl.setAttribute('data-event-date', eventDate);
+        mainEl.setAttribute('data-event-time', eventTime);
+        mainEl.setAttribute('data-event-location', eventLocation);
 
         if (attending === 'yes') {
             emojiEl.textContent = '🎉';
             messageEl.textContent = "We Can't Wait to See You!";
             textEl.textContent = "Your RSVP has been received. We're so excited you can make it! Get ready for an unforgettable evening of great music, drinks, and amazing company.";
             reminderEl.style.display = 'block';
+            addCalendarBtn.style.display = 'inline-block';
+
+            // Update detail display
+            document.getElementById('detailDate').textContent = eventDate;
+            document.getElementById('detailTime').textContent = eventTime;
+            document.getElementById('detailLocation').textContent = eventLocation;
         } else if (attending === 'no') {
             emojiEl.textContent = '😢';
             messageEl.textContent = "We'll Miss You!";
@@ -122,6 +171,97 @@
             // Default message if no parameter
             messageEl.textContent = "Thank You!";
             textEl.textContent = "Your RSVP has been received.";
+        }
+
+        function addToCalendar() {
+            const name = mainEl.getAttribute('data-event-name');
+            const date = mainEl.getAttribute('data-event-date');
+            const time = mainEl.getAttribute('data-event-time');
+            const location = mainEl.getAttribute('data-event-location');
+
+            // Parse date and time (this is a simplified parser - adjust as needed)
+            // For now, we'll use a fixed date format
+            // You can enhance this to parse various formats
+            const eventDateTime = parseEventDateTime(date, time);
+
+            // Generate .ics file content
+            const icsContent = generateICS(name, eventDateTime, location);
+
+            // Create download link
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'event.ics';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function parseEventDateTime(dateStr, timeStr) {
+            // Simple parser - enhance as needed
+            // For now, returns a default date
+            // In production, you'd want to parse the actual date/time strings
+            const now = new Date();
+            const year = now.getFullYear();
+
+            // Try to extract month and day from dateStr
+            // This is a simple implementation
+            const month = dateStr.includes('Jan') ? 0 :
+                dateStr.includes('Feb') ? 1 :
+                    dateStr.includes('Mar') ? 2 :
+                        dateStr.includes('Apr') ? 3 :
+                            dateStr.includes('May') ? 4 :
+                                dateStr.includes('Jun') ? 5 :
+                                    dateStr.includes('Jul') ? 6 :
+                                        dateStr.includes('Aug') ? 7 :
+                                            dateStr.includes('Sep') ? 8 :
+                                                dateStr.includes('Oct') ? 9 :
+                                                    dateStr.includes('Nov') ? 10 : 11;
+
+            const dayMatch = dateStr.match(/\d+/);
+            const day = dayMatch ? parseInt(dayMatch[0]) : 1;
+
+            // Parse time
+            const hourMatch = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)/i);
+            let hour = 18; // default 6 PM
+            let minute = 0;
+
+            if (hourMatch) {
+                hour = parseInt(hourMatch[1]);
+                minute = hourMatch[2] ? parseInt(hourMatch[2]) : 0;
+                if (hourMatch[3].toUpperCase() === 'PM' && hour < 12) hour += 12;
+                if (hourMatch[3].toUpperCase() === 'AM' && hour === 12) hour = 0;
+            }
+
+            return new Date(year, month, day, hour, minute);
+        }
+
+        function generateICS(title, startDate, location) {
+            const endDate = new Date(startDate.getTime() + (3 * 60 * 60 * 1000)); // 3 hours duration
+
+            const formatDate = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            };
+
+            const now = new Date();
+            const dtstamp = formatDate(now);
+            const dtstart = formatDate(startDate);
+            const dtend = formatDate(endDate);
+
+            return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Party RSVP//Event//EN
+BEGIN:VEVENT
+UID:${dtstamp}@partyrsvp
+DTSTAMP:${dtstamp}
+DTSTART:${dtstart}
+DTEND:${dtend}
+SUMMARY:${title}
+LOCATION:${location}
+DESCRIPTION:${title} - See you there!
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR`;
         }
     </script>
 </body>

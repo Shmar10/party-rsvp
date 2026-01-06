@@ -69,8 +69,19 @@ rsvpForm.addEventListener('submit', async (e) => {
         // Mark as submitted
         localStorage.setItem(submittedKey, 'true');
 
-        // Redirect to thank you page with attending status
-        window.location.href = `thank-you.html?attending=${attending}`;
+        // Redirect to thank you page with all event details for calendar
+        const pageEventName = document.querySelector('.container').getAttribute('data-event-name') || eventName;
+        const pageDate = document.querySelector('.event-details .detail-item:nth-child(1) span:last-child')?.textContent || '';
+        const pageTime = document.querySelector('.event-details .detail-item:nth-child(2) span:last-child')?.textContent || '';
+        const pageLocation = document.querySelector('.event-details .detail-item:nth-child(3) span:last-child')?.textContent || '';
+        const params = new URLSearchParams({
+            attending: attending,
+            event: pageEventName,
+            date: pageDate,
+            time: pageTime,
+            location: pageLocation
+        });
+        window.location.href = `thank-you.html?${params.toString()}`;
     } catch (err) {
         console.error('Error submitting RSVP:', err);
         showMessage('Oops! Something went wrong. Please try again.', 'error');
