@@ -616,37 +616,33 @@ class PartyManagerApp:
             content
         )
         
-        # Update date
-        # Format date from DateEntry (yyyy-mm-dd) to friendly format
+        # Format date
         date_obj = self.event_date.get_date()
-        formatted_date = date_obj.strftime('%A, %b %d').replace(' 0', ' ')  # "Saturday, Jan 24"
-        # Add ordinal suffix (st, nd, rd, th)
+        formatted_date = date_obj.strftime('%A, %b %d').replace(' 0', ' ')
         day = date_obj.day
-        if 4 <= day <= 20 or 24 <= day <= 30:
-            suffix = "th"
-        else:
-            suffix = ["st", "nd", "rd"][day % 10 - 1]
+        suffix = "th" if 4 <= day <= 20 or 24 <= day <= 30 else ["st", "nd", "rd"][day % 10 - 1]
         formatted_date = formatted_date + suffix
+
+        # Replace the entire event-details section with a clean text version
+        # This removes any previously uploaded image and ensures items are visible
+        details_html = f'''<div class="event-details">
+                <div class="detail-item">
+                    <span class="icon">📅</span><span>{formatted_date}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="icon">⏰</span><span>{self.event_time.get()}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="icon">📍</span><span>{self.event_location.get()}</span>
+                </div>
+            </div>'''
         
+        # Robust replacement that cleans up the hero section
         content = re.sub(
-            r'<span>.*?</span>\s*</div>\s*<div class="detail-item">\s*<span class="icon">📅</span>',
-            f'<span>{formatted_date}</span></div><div class="detail-item"><span class="icon">📅</span>',
+            r'<div class="event-details">.*?</header>',
+            f'{details_html}\n        </header>',
             content,
-            count=1
-        )
-        
-        # Update time
-        content = re.sub(
-            r'<div class="detail-item">\s*<span class="icon">⏰</span>\s*<span>.*?</span>',
-            f'<div class="detail-item"><span class="icon">⏰</span><span>{self.event_time.get()}</span>',
-            content
-        )
-        
-        # Update location
-        content = re.sub(
-            r'<div class="detail-item">\s*<span class="icon">📍</span>\s*<span>.*?</span>',
-            f'<div class="detail-item"><span class="icon">📍</span><span>{self.event_location.get()}</span>',
-            content
+            flags=re.DOTALL
         )
         
         return content
