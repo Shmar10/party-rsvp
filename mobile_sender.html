@@ -171,9 +171,10 @@
 
     <script>
         // ========================================
-        // CUSTOMIZE THESE VALUES:
+        // CUSTOMIZE THESE VALUES (updated automatically by Party Manager):
         // ========================================
         const PARTY_LINK = "https://shmar10.github.io/party-rsvp";
+        const EVENT_ID = "default_party"; // Unique ID for tracking progress
 
         // Add your guests here (copy from guests.csv)
         const guests = [
@@ -183,7 +184,9 @@
         ];
         // ========================================
 
-        let sentGuests = new Set(JSON.parse(localStorage.getItem('sentGuests') || '[]'));
+        // Use event-specific storage key
+        const STORAGE_KEY = `sentGuests_${EVENT_ID.toLowerCase().replace(/\s+/g, '_')}`;
+        let sentGuests = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
 
         function renderGuests() {
             const listEl = document.getElementById('guestList');
@@ -215,7 +218,7 @@
 
             // Mark as sent
             sentGuests.add(phone);
-            localStorage.setItem('sentGuests', JSON.stringify([...sentGuests]));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([...sentGuests]));
 
             // Open Messages app
             window.location.href = smsUrl;
@@ -241,8 +244,8 @@
         let headerPressTimer;
         document.querySelector('.header').addEventListener('touchstart', () => {
             headerPressTimer = setTimeout(() => {
-                if (confirm('Reset all sent status?')) {
-                    localStorage.removeItem('sentGuests');
+                if (confirm(`Reset sent status for "${EVENT_ID}"?`)) {
+                    localStorage.removeItem(STORAGE_KEY);
                     sentGuests.clear();
                     renderGuests();
                     updateStats();

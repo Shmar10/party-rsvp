@@ -482,8 +482,15 @@ class PartyManagerApp:
             # Replace the guests array
             pattern = r'const guests = \[(.*?)\];'
             replacement = f'const guests = [\n{guest_array}\n        ];'
-            
             new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+            
+            # Replace the EVENT_ID
+            event_id = self.event_name.get()
+            new_content = re.sub(
+                r'const EVENT_ID = ".*?";',
+                f'const EVENT_ID = "{event_id}";',
+                new_content
+            )
             
             # Write back
             with open(mobile_sender_path, 'w', encoding='utf-8') as f:
