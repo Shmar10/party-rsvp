@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Invites - Quick Send</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat {
+            flex: 1;
+            background: #f7f7ff;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .guest-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .guest-card.sent {
+            opacity: 0.6;
+            background: #f0f0f0;
+        }
+
+        .guest-info {
+            margin-bottom: 12px;
+        }
+
+        .guest-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .guest-phone {
+            font-size: 14px;
+            color: #888;
+            font-family: 'Courier New', monospace;
+        }
+
+        .message-preview {
+            background: #f7f7ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .send-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-btn:active {
+            transform: scale(0.98);
+        }
+
+        .send-btn.sent {
+            background: #888;
+            box-shadow: none;
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .guest-name {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Party Invites</h1>
+            <p>Tap to send messages via your Messages app</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="sentCount">0</div>
+                    <div class="stat-label">Sent</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="remainingCount">0</div>
+                    <div class="stat-label">Remaining</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="guestList"></div>
+    </div>
+
+    <script>
+        // ========================================
+        // CUSTOMIZE THESE VALUES:
+        // ========================================
+        const PARTY_LINK = "https://shmar10.github.io/party-rsvp";
+
+        // Add your guests here (copy from guests.csv)
+        const guests = [
+            { name: "Jill Martin", phone: "8478156373" },
+            { name: "Shawn Martin", phone: "8477363598" }
+        ];
+        // ========================================
+
+        let sentGuests = new Set(JSON.parse(localStorage.getItem('sentGuests') || '[]'));
+
+        function renderGuests() {
+            const listEl = document.getElementById('guestList');
+            listEl.innerHTML = '';
+
+            guests.forEach((guest) => {
+                const isSent = sentGuests.has(guest.phone);
+                const message = `Hey ${guest.name}! Hope you can make it. RSVP here: ${PARTY_LINK}`;
+
+                const card = document.createElement('div');
+                card.className = `guest-card ${isSent ? 'sent' : ''}`;
+                card.innerHTML = `
+                    <div class="guest-info">
+                        <div class="guest-name">${guest.name}</div>
+                        <div class="guest-phone">${guest.phone}</div>
+                    </div>
+                    <div class="message-preview">${message}</div>
+                    <button class="send-btn ${isSent ? 'sent' : ''}" onclick="sendMessage('${guest.phone}', '${guest.name}')">
+                        ${isSent ? '✓ Sent' : 'Send Message'}
+                    </button>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function sendMessage(phone, name) {
+            const message = `Hey ${name}! Hope you can make it. RSVP here: ${PARTY_LINK}`;
+            const smsUrl = `sms:${phone}?body=${encodeURIComponent(message)}`;
+
+            // Mark as sent
+            sentGuests.add(phone);
+            localStorage.setItem('sentGuests', JSON.stringify([...sentGuests]));
+
+            // Open Messages app
+            window.location.href = smsUrl;
+
+            // Update UI
+            setTimeout(() => {
+                renderGuests();
+                updateStats();
+            }, 500);
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = guests.length;
+            document.getElementById('sentCount').textContent = sentGuests.size;
+            document.getElementById('remainingCount').textContent = guests.length - sentGuests.size;
+        }
+
+        // Initialize
+        renderGuests();
+        updateStats();
+
+        // Reset (long-press header for 2 seconds to reset)
+        let headerPressTimer;
+        document.querySelector('.header').addEventListener('touchstart', () => {
+            headerPressTimer = setTimeout(() => {
+                if (confirm('Reset all sent status?')) {
+                    localStorage.removeItem('sentGuests');
+                    sentGuests.clear();
+                    renderGuests();
+                    updateStats();
+                }
+            }, 2000);
+        });
+        document.querySelector('.header').addEventListener('touchend', () => {
+            clearTimeout(headerPressTimer);
+        });
+    </script>
+</body>
+
+</html>
