@@ -39,6 +39,9 @@ rsvpForm.addEventListener('submit', async (e) => {
     const attending = formData.get('attending');
     const guestName = formData.get('name');
 
+    // Get event name from page
+    const eventName = document.querySelector('.container').getAttribute('data-event-name') || 'Unknown Event';
+
     // Check for duplicate submission (basic client-side check)
     const submittedKey = `rsvp_submitted_${guestName.toLowerCase().replace(/\s+/g, '_')}`;
     if (localStorage.getItem(submittedKey)) {
@@ -52,7 +55,8 @@ rsvpForm.addEventListener('submit', async (e) => {
         guest_name: guestName,
         party_size: parseInt(formData.get('guests')),
         notes: formData.get('dietary'),
-        attending: attending
+        attending: attending,
+        event_name: eventName
     };
 
     try {
