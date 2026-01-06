@@ -269,13 +269,81 @@ class PartyManagerApp:
             history_dropdown.bind('<<ComboboxSelected>>', self.on_history_selected)
             ToolTip(history_dropdown, "Select a previous party to load all its details")
         
+        # Essential Event Info - ALWAYS VISIBLE (needed for calendar/tracking)
+        info_frame = tk.Frame(tab, bg="#f5f5f5")
+        info_frame.pack(pady=10, padx=20, fill='x')
+        
+        # Event Name
+        tk.Label(
+            info_frame,
+            text="Event Name (Required for Tracking):",
+            font=("Arial", 11, "bold"),
+            bg="#f5f5f5"
+        ).grid(row=0, column=0, sticky='w', pady=5)
+        
+        self.event_name = tk.Entry(info_frame, font=("Arial", 11), width=50)
+        self.event_name.grid(row=0, column=1, pady=5, sticky='ew')
+        self.event_name.insert(0, "Celebration Night")
+        ToolTip(self.event_name, "This name is used to track RSVPs for your event")
+        
+        # Date
+        tk.Label(
+            info_frame,
+            text="Date (for Calendar):",
+            font=("Arial", 11, "bold"),
+            bg="#f5f5f5"
+        ).grid(row=1, column=0, sticky='w', pady=5)
+        
+        self.event_date = DateEntry(
+            info_frame,
+            font=("Arial", 11),
+            width=37,
+            background='#667eea',
+            foreground='white',
+            borderwidth=2,
+            date_pattern='yyyy-mm-dd'
+        )
+        self.event_date.grid(row=1, column=1, pady=5, sticky='ew')
+        ToolTip(self.event_date, "Used to generate the 'Add to Calendar' link for guests")
+
+        # Time
+        tk.Label(
+            info_frame,
+            text="Time (for Calendar):",
+            font=("Arial", 11, "bold"),
+            bg="#f5f5f5"
+        ).grid(row=2, column=0, sticky='w', pady=5)
+        
+        self.event_time = tk.Entry(info_frame, font=("Arial", 11), width=50)
+        self.event_time.grid(row=2, column=1, pady=5, sticky='ew')
+        self.event_time.insert(0, "6:00 PM start")
+        ToolTip(self.event_time, "Visible in the calendar invite")
+
+        # Location
+        tk.Label(
+            info_frame,
+            text="Location (for Calendar):",
+            font=("Arial", 11, "bold"),
+            bg="#f5f5f5"
+        ).grid(row=3, column=0, sticky='w', pady=5)
+        
+        self.event_location = tk.Entry(info_frame, font=("Arial", 11), width=50)
+        self.event_location.grid(row=3, column=1, pady=5, sticky='ew')
+        self.event_location.insert(0, "The Martin's Lanai")
+        ToolTip(self.event_location, "Location for the calendar invite")
+        
+        info_frame.columnconfigure(1, weight=1)
+
+        # Separator
+        ttk.Separator(tab, orient='horizontal').pack(fill='x', padx=20, pady=10)
+        
         # Choice frame
         choice_frame = tk.Frame(tab, bg="#f5f5f5")
         choice_frame.pack(pady=10, padx=20, fill='x')
         
         tk.Label(
             choice_frame,
-            text="Choose how to set up your party:",
+            text="Choose how to display details on your page:",
             font=("Arial", 12, "bold"),
             bg="#f5f5f5"
         ).pack(anchor='w', pady=(0, 10))
@@ -284,7 +352,7 @@ class PartyManagerApp:
         
         tk.Radiobutton(
             choice_frame,
-            text="📝 Fill out form manually",
+            text="📝 Show text details and description",
             variable=self.detail_choice,
             value="form",
             command=self.toggle_detail_mode,
@@ -295,7 +363,7 @@ class PartyManagerApp:
         
         tk.Radiobutton(
             choice_frame,
-            text="🖼️ Upload event image (PNG, JPG, etc.)",
+            text="🖼️ Show event image (PNG, JPG, etc.)",
             variable=self.detail_choice,
             value="image",
             command=self.toggle_detail_mode,
@@ -303,25 +371,6 @@ class PartyManagerApp:
             bg="#f5f5f5",
             cursor="hand2"
         ).pack(anchor='w', pady=5)
-        
-        # Event Name - ALWAYS VISIBLE (needed for tracking)
-        name_frame = tk.Frame(tab, bg="#f5f5f5")
-        name_frame.pack(pady=10, padx=20, fill='x')
-        
-        tk.Label(
-            name_frame,
-            text="Event Name (Required for Tracking):",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).pack(anchor='w')
-        
-        self.event_name = tk.Entry(name_frame, font=("Arial", 11), width=60)
-        self.event_name.pack(anchor='w', pady=5, fill='x')
-        self.event_name.insert(0, "Celebration Night")
-        ToolTip(self.event_name, "This name is used to track RSVPs for your event")
-        
-        # Separator
-        ttk.Separator(tab, orient='horizontal').pack(fill='x', padx=20, pady=10)
         
         # Form frame (for manual entry fields)
         self.form_frame = tk.Frame(tab, bg="#f5f5f5")
@@ -335,53 +384,9 @@ class PartyManagerApp:
             bg="#f5f5f5"
         ).grid(row=1, column=0, sticky='nw', pady=5)
         
-        self.event_description = tk.Text(self.form_frame, font=("Arial", 11), width=40, height=2, wrap='word')
+        self.event_description = tk.Text(self.form_frame, font=("Arial", 11), width=45, height=3, wrap='word')
         self.event_description.grid(row=1, column=1, pady=5, sticky='ew')
         self.event_description.insert('1.0', "Join us for an unforgettable evening of music, drinks, and great company.")
-        
-        # Date
-        tk.Label(
-            self.form_frame,
-            text="Date:",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=2, column=0, sticky='w', pady=5)
-        
-        # Date picker with calendar
-        self.event_date = DateEntry(
-            self.form_frame,
-            font=("Arial", 11),
-            width=37,
-            background='#667eea',
-            foreground='white',
-            borderwidth=2,
-            date_pattern='yyyy-mm-dd'  # We'll format this when updating the HTML
-        )
-        self.event_date.grid(row=2, column=1, pady=5, sticky='ew')
-        
-        # Time
-        tk.Label(
-            self.form_frame,
-            text="Time:",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=3, column=0, sticky='w', pady=5)
-        
-        self.event_time = tk.Entry(self.form_frame, font=("Arial", 11), width=40)
-        self.event_time.grid(row=3, column=1, pady=5, sticky='ew')
-        self.event_time.insert(0, "6:00 PM start")
-        
-        # Location
-        tk.Label(
-            self.form_frame,
-            text="Location:",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=4, column=0, sticky='w', pady=5)
-        
-        self.event_location = tk.Entry(self.form_frame, font=("Arial", 11), width=40)
-        self.event_location.grid(row=4, column=1, pady=5, sticky='ew')
-        self.event_location.insert(0, "The Martin's Lanai")
         
         self.form_frame.columnconfigure(1, weight=1)
         
@@ -640,10 +645,17 @@ class PartyManagerApp:
         return content
     
     def update_with_image(self, content):
-        """Update HTML content to display event image"""
+        """Update HTML content to display event image with hidden metadata for calendar"""
         img_filename = os.path.basename(self.event_image_path)
         event_name_value = self.event_name.get()
         
+        # Format date for metadata
+        date_obj = self.event_date.get_date()
+        formatted_date = date_obj.strftime('%A, %b %d').replace(' 0', ' ')
+        day = date_obj.day
+        suffix = "th" if 4 <= day <= 20 or 24 <= day <= 30 else ["st", "nd", "rd"][day % 10 - 1]
+        formatted_date = formatted_date + suffix
+
         # Update data-event-name attribute on main container
         content = re.sub(
             r'<main class="container"[^>]*>',
@@ -658,9 +670,19 @@ class PartyManagerApp:
             content
         )
         
-        # Replace the event-details section with an image
+        # Replace the event-details section with the image AND hidden metadata for calendar
+        # We use display:none on the detail-items so they are in the DOM for script.js but invisible
         image_html = f'''<div class="event-details">
                 <img src="{img_filename}" alt="Event Details" style="max-width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <div class="detail-item" style="display: none;">
+                    <span class="icon">📅</span><span>{formatted_date}</span>
+                </div>
+                <div class="detail-item" style="display: none;">
+                    <span class="icon">⏰</span><span>{self.event_time.get()}</span>
+                </div>
+                <div class="detail-item" style="display: none;">
+                    <span class="icon">📍</span><span>{self.event_location.get()}</span>
+                </div>
             </div>'''
         
         content = re.sub(
