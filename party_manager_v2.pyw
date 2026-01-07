@@ -165,6 +165,30 @@ class PartyManagerApp:
             bg="#f5f5f5"
         )
         self.csv_status.pack(anchor='w')
+
+        # Manual Entry Section
+        manual_frame = tk.LabelFrame(tab, text="Add/Edit Guest Manually", font=("Arial", 11, "bold"), bg="#f5f5f5", padx=15, pady=10)
+        manual_frame.pack(pady=10, padx=20, fill='x')
+
+        tk.Label(manual_frame, text="Name:", bg="#f5f5f5", font=("Arial", 10)).grid(row=0, column=0, sticky='w')
+        self.manual_name = tk.Entry(manual_frame, font=("Arial", 10), width=25)
+        self.manual_name.grid(row=0, column=1, padx=(5, 15), pady=5)
+
+        tk.Label(manual_frame, text="Phone:", bg="#f5f5f5", font=("Arial", 10)).grid(row=0, column=2, sticky='w')
+        self.manual_phone = tk.Entry(manual_frame, font=("Arial", 10), width=20)
+        self.manual_phone.grid(row=0, column=3, padx=(5, 15), pady=5)
+
+        add_btn = tk.Button(
+            manual_frame,
+            text="➕ Add Guest",
+            command=self.add_manual_guest,
+            bg="#667eea",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=15
+        )
+        add_btn.grid(row=0, column=4, padx=5)
+        ToolTip(add_btn, "Add this guest to the list below")
         
         # Guest List Preview
         preview_frame = tk.Frame(tab, bg="#f5f5f5")
@@ -190,6 +214,23 @@ class PartyManagerApp:
         
         self.guest_tree.pack(side=tk.LEFT, fill='both', expand=True)
         scrollbar.pack(side=tk.RIGHT, fill='y')
+        
+        # Bind double click for editing
+        self.guest_tree.bind("<Double-1>", self.on_guest_double_click)
+
+        # Deletion Button
+        delete_btn = tk.Button(
+            tab,
+            text="🗑️ Delete Selected Guest(s)",
+            command=self.delete_selected_guests,
+            bg="#dc3545",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=15,
+            pady=5
+        )
+        delete_btn.pack(pady=5, padx=20, anchor='e')
+        ToolTip(delete_btn, "Remove the highlighted guests from the list")
         
         # Action Buttons
         action_frame = tk.Frame(tab, bg="#f5f5f5")
@@ -488,9 +529,13 @@ This tool helps you manage your guest list and party website effortlessly.
 📋 TAB 1: GUEST LIST MANAGER
 --------------------------------------------------
 1. UPLOAD: Click "Upload CSV File" or just drag and drop your guests.csv onto the window.
-2. PREVIEW: Check the table to ensure your guest names and numbers are correct.
-3. PREPARE PHONE: Click "Update mobile_sender.html" once guests are loaded.
-4. SAVE: Use "Save To..." to put the file on your device to send invites via SMS.
+2. MANAGE: Use the "Add/Edit Guest Manually" box to add new people without a CSV.
+3. EDIT: Double-click any guest in the list to correct their name or number.
+4. DELETE: Use "Delete Selected Guest(s)" to remove someone from the list.
+5. PREPARE PHONE: Click "Update mobile_sender.html" once guests are loaded.
+6. SAVE/CLOUD: Use "Save To..." to put the file on your device. 
+   💡 TIP: You can save this file to Dropbox/Google Drive and open it from 
+   the cloud on your phone to start sending invites instantly!
 
 --------------------------------------------------
 🎊 TAB 2: PARTY DETAILS
@@ -584,13 +629,14 @@ Need more help? Check the 'docs' folder in your project directory!
             )
             self.update_status("mobile_sender.html updated")
             
+# Erfolg
         except Exception as e:
             messagebox.showerror("Error", f"Failed to update mobile_sender.html:\n{str(e)}")
-    
+
     def save_mobile_sender(self):
         """Save mobile_sender.html to a chosen location"""
         if not self.guests:
-            messagebox.showwarning("No Guests", "Please upload a CSV file and update first")
+            messagebox.showwarning("No Guests", "Please add some guests and update first")
             return
         
         save_path = filedialog.asksaveasfilename(
@@ -672,9 +718,91 @@ Need more help? Check the 'docs' folder in your project directory!
             messagebox.showerror("Error", f"Failed to update:\n{str(e)}")
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Git Error", f"Git operation failed:\n{str(e)}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to update:\n{str(e)}")
-    
+        except Exception as ev:
+            messagebox.showerror("Error", f"Failed to update:\n{str(ev)}")
+
+    def add_manual_guest(self):
+        """Add a guest manually from entry fields"""
+        name = self.manual_name.get().strip()
+        phone = self.manual_phone.get().strip()
+
+        if not name or not phone:
+            messagebox.showwarning("Incomplete Data", "Please enter both a Name and Phone number.")
+            return
+
+        guest = {'Name': name, 'Phone': phone}
+        self.guests.append(guest)
+        self.guest_tree.insert('', 'end', values=(name, phone))
+        
+        # Clear fields
+        self.manual_name.delete(0, tk.END)
+        self.manual_phone.delete(0, tk.END)
+        self.update_status(f"Added guest: {name}")
+
+    def delete_selected_guests(self):
+        """Delete highlighted guests from tree and list"""
+        selected_items = self.guest_tree.selection()
+        if not selected_items:
+            return
+
+        if not messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {len(selected_items)} guest(s)?"):
+            return
+
+        for item in selected_items:
+            values = self.guest_tree.item(item, 'values')
+            # Remove from self.guests
+            self.guests = [g for g in self.guests if not (str(g.get('Name')) == str(values[0]) and str(g.get('Phone')).replace('.0', '') == str(values[1]))]
+            # Remove from Treeview
+            self.guest_tree.delete(item)
+        
+        self.update_status(f"Deleted {len(selected_items)} guest(s)")
+
+    def on_guest_double_click(self, event):
+        """Open edit dialog on double click"""
+        item = self.guest_tree.identify_row(event.y)
+        if not item:
+            return
+
+        values = self.guest_tree.item(item, 'values')
+        
+        # Create edit window
+        edit_win = tk.Toplevel(self.root)
+        edit_win.title("Edit Guest")
+        edit_win.geometry("300x200")
+        edit_win.configure(bg="#f5f5f5")
+        edit_win.transient(self.root)
+        edit_win.grab_set()
+
+        tk.Label(edit_win, text="Name:", bg="#f5f5f5").pack(pady=(20, 0))
+        name_ent = tk.Entry(edit_win, font=("Arial", 10), width=30)
+        name_ent.pack(pady=5)
+        name_ent.insert(0, values[0])
+
+        tk.Label(edit_win, text="Phone:", bg="#f5f5f5").pack()
+        phone_ent = tk.Entry(edit_win, font=("Arial", 10), width=30)
+        phone_ent.pack(pady=5)
+        phone_ent.insert(0, values[1])
+
+        def save_edit():
+            new_name = name_ent.get().strip()
+            new_phone = phone_ent.get().strip()
+            if not new_name or not new_phone:
+                return
+            
+            # Update self.guests
+            for g in self.guests:
+                if str(g.get('Name')) == str(values[0]) and str(g.get('Phone')).replace('.0', '') == str(values[1]):
+                    g['Name'] = new_name
+                    g['Phone'] = new_phone
+                    break
+            
+            # Update Treeview
+            self.guest_tree.item(item, values=(new_name, new_phone))
+            edit_win.destroy()
+            self.update_status(f"Updated guest: {new_name}")
+
+        tk.Button(edit_win, text="💾 Save Changes", command=save_edit, bg="#28a745", fg="white", font=("Arial", 10, "bold"), padx=10, pady=5).pack(pady=10)
+
     def update_with_form_data(self, content):
         """Update HTML content with form data"""
         event_name_value = self.event_name.get()
