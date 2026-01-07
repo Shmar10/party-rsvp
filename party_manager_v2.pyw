@@ -239,46 +239,58 @@ class PartyManagerApp:
         delete_btn.pack(pady=5, padx=20, anchor='e')
         ToolTip(delete_btn, "Remove the highlighted guests from the list")
         
-        # Action Buttons
+        # Action Buttons (Steps 3 & 4)
         action_frame = tk.Frame(tab, bg="#f5f5f5")
-        action_frame.pack(pady=20, padx=20, fill='x')
+        action_frame.pack(pady=30, padx=20, fill='x')
+        
+        # Step 3 Frame
+        step3_frame = tk.Frame(action_frame, bg="#f5f5f5")
+        step3_frame.pack(side=tk.LEFT, expand=True)
         
         tk.Label(
-            action_frame,
+            step3_frame,
             text="Step 3: Update mobile_sender.html",
             font=("Arial", 12, "bold"),
             bg="#f5f5f5"
-        ).pack(anchor='w', pady=(0, 10))
-        
-        btn_frame = tk.Frame(action_frame, bg="#f5f5f5")
-        btn_frame.pack(anchor='w')
+        ).pack(pady=(0, 10))
         
         update_btn = tk.Button(
-            btn_frame,
+            step3_frame,
             text="✅ Update mobile_sender.html",
             command=self.update_mobile_sender,
             bg="#28a745",
             fg="white",
             font=("Arial", 11, "bold"),
-            padx=20,
-            pady=10,
+            padx=30,
+            pady=15,
             cursor="hand2"
         )
-        update_btn.pack(side=tk.LEFT, padx=(0, 10))
+        update_btn.pack()
         ToolTip(update_btn, "Inject guest list into mobile_sender.html for sending")
         
+        # Step 4 Frame
+        step4_frame = tk.Frame(action_frame, bg="#f5f5f5")
+        step4_frame.pack(side=tk.LEFT, expand=True)
+
+        tk.Label(
+            step4_frame,
+            text="Step 4: Save To...",
+            font=("Arial", 12, "bold"),
+            bg="#f5f5f5"
+        ).pack(pady=(0, 10))
+        
         save_btn = tk.Button(
-            btn_frame,
+            step4_frame,
             text="💾 Save To...",
             command=self.save_mobile_sender,
             bg="#17a2b8",
             fg="white",
             font=("Arial", 11, "bold"),
-            padx=20,
-            pady=10,
+            padx=40,
+            pady=15,
             cursor="hand2"
         )
-        save_btn.pack(side=tk.LEFT)
+        save_btn.pack()
         ToolTip(save_btn, "Save updated mobile_sender.html to a location of your choice")
     
     def create_party_details_tab(self):
