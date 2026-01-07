@@ -173,10 +173,12 @@ class PartyManagerApp:
         tk.Label(manual_frame, text="Name:", bg="#f5f5f5", font=("Arial", 10)).grid(row=0, column=0, sticky='w')
         self.manual_name = tk.Entry(manual_frame, font=("Arial", 10), width=25)
         self.manual_name.grid(row=0, column=1, padx=(5, 15), pady=5)
+        self.manual_name.bind("<Return>", lambda e: self.add_manual_guest())
 
         tk.Label(manual_frame, text="Phone:", bg="#f5f5f5", font=("Arial", 10)).grid(row=0, column=2, sticky='w')
         self.manual_phone = tk.Entry(manual_frame, font=("Arial", 10), width=20)
         self.manual_phone.grid(row=0, column=3, padx=(5, 15), pady=5)
+        self.manual_phone.bind("<Return>", lambda e: self.add_manual_guest())
 
         add_btn = tk.Button(
             manual_frame,
@@ -215,8 +217,10 @@ class PartyManagerApp:
         self.guest_tree.pack(side=tk.LEFT, fill='both', expand=True)
         scrollbar.pack(side=tk.RIGHT, fill='y')
         
-        # Bind double click for editing
+        # Bind double click for editing and keys for deletion
         self.guest_tree.bind("<Double-1>", self.on_guest_double_click)
+        self.guest_tree.bind("<Delete>", lambda e: self.delete_selected_guests())
+        self.guest_tree.bind("<BackSpace>", lambda e: self.delete_selected_guests())
 
         # Deletion Button
         delete_btn = tk.Button(
@@ -1079,19 +1083,36 @@ Need more help? Check the 'docs' folder in your project directory!
                 return
             
             self.csv_path = file_path
-            self.guests = df.to_dict('records')
+            new_guests = df.to_dict('records')
             
-            # Clear and populate treeview
-            for item in self.guest_tree.get_children():
-                self.guest_tree.delete(item)
-            
+            # Check if we should append or overwrite if there's already data
+            if self.guests and messagebox.askyesno("Append Guests?", f"You already have {len(self.guests)} guests. Do you want to APPEND the new guests from this CSV to your current list?\n\n(Click 'No' to clear and start fresh)"):
+                self.guests.extend(new_guests)
+                self.update_status(f"Appended {len(new_guests)} guests")
+            else:
+                self.guests = new_guests
+                # Clear and populate treeview
+                for item in self.guest_tree.get_children():
+                    self.guest_tree.delete(item)
+                self.update_status(f"Loaded {len(self.guests)} guests")
+
+            # Refresh Treeview
+            if self.guests == new_guests: # If we overwrote or it was empty
+                pass # Already cleared above
+            else: # If we appended, we need to add just the new ones
+                for guest in new_guests:
+                    name = guest.get('Name', '')
+                    phone = str(guest.get('Phone', '')).replace('.0', '')
+                    self.guest_tree.insert('', 'end', values=(name, phone))
+                return # Skip the default refresh below
+
             for guest in self.guests:
                 name = guest.get('Name', '')
                 phone = str(guest.get('Phone', '')).replace('.0', '')
                 self.guest_tree.insert('', 'end', values=(name, phone))
             
             self.csv_status.config(
-                text=f"✅ {len(self.guests)} guests loaded from {os.path.basename(file_path)}",
+                text=f"✅ {len(self.guests)} guests total (linked to {os.path.basename(file_path)})",
                 fg="#28a745"
             )
             self.update_status(f"Loaded {len(self.guests)} guests")
