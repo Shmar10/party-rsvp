@@ -551,6 +551,28 @@ class PartyManagerApp:
         self.sb_key.grid(row=1, column=1, padx=10, pady=2)
         self.sb_key.insert(0, default_key)
 
+        # Stats Panel
+        self.stats_frame = tk.Frame(tab, bg="#f5f5f5")
+        self.stats_frame.pack(pady=5, padx=20, fill='x')
+        
+        self.total_expected_label = tk.Label(
+            self.stats_frame,
+            text="Total Expected: 0",
+            font=("Arial", 14, "bold"),
+            bg="#f5f5f5",
+            fg="#28a745"
+        )
+        self.total_expected_label.pack(side=tk.LEFT, padx=10)
+        
+        self.dietary_alert_label = tk.Label(
+            self.stats_frame,
+            text="Dietary Flags: 0",
+            font=("Arial", 12, "bold"),
+            bg="#f5f5f5",
+            fg="#dc3545"
+        )
+        self.dietary_alert_label.pack(side=tk.LEFT, padx=30)
+
         # Event Selector Frame
         select_frame = tk.Frame(tab, bg="#f5f5f5")
         select_frame.pack(pady=10, padx=20, fill='x')
@@ -569,12 +591,21 @@ class PartyManagerApp:
         list_frame = tk.Frame(tab, bg="#f5f5f5")
         list_frame.pack(pady=10, padx=20, fill='both', expand=True)
 
-        columns = ('Name', 'Attending', 'Message', 'Email')
+        columns = ('Name', 'Count', 'Attending', 'Dietary', 'Message', 'Email')
         self.cloud_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=10)
         
-        for col in columns:
-            self.cloud_tree.heading(col, text=col)
-            self.cloud_tree.column(col, width=100)
+        self.cloud_tree.heading('Name', text='Name')
+        self.cloud_tree.column('Name', width=150)
+        self.cloud_tree.heading('Count', text='Count')
+        self.cloud_tree.column('Count', width=50, anchor='center')
+        self.cloud_tree.heading('Attending', text='Attending')
+        self.cloud_tree.column('Attending', width=80, anchor='center')
+        self.cloud_tree.heading('Dietary', text='Dietary')
+        self.cloud_tree.column('Dietary', width=150)
+        self.cloud_tree.heading('Message', text='Message')
+        self.cloud_tree.column('Message', width=200)
+        self.cloud_tree.heading('Email', text='Email')
+        self.cloud_tree.column('Email', width=150)
         
         sb = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.cloud_tree.yview)
         self.cloud_tree.configure(yscroll=sb.set)
@@ -666,15 +697,39 @@ class PartyManagerApp:
             
             self.cloud_guests = guests # Store for import
             
+            total_headcount = 0
+            dietary_count = 0
+            
             for g in guests:
-                # Try guest_name first, then fallback to name
                 name = g.get('guest_name') or g.get('name') or g.get('email', 'Unknown')
                 attending = g.get('attending', '')
+                
+                # Headcount logic (only sum if attending 'yes')
+                party_size = g.get('party_size') or g.get('guests') or 1
+                try: 
+                    count_val = int(party_size)
+                except: 
+                    count_val = 1
+                
+                is_attending = str(attending).lower() == 'yes'
+                if is_attending:
+                    total_headcount += count_val
+                
+                # Dietary notes
+                notes = g.get('notes') or g.get('dietary_notes') or ""
+                if notes.strip():
+                    dietary_count += 1
+                
                 message = g.get('message', '')
                 email = g.get('email', '')
-                self.cloud_tree.insert('', 'end', values=(name, attending, message, email))
+                
+                self.cloud_tree.insert('', 'end', values=(name, count_val, attending, notes, message, email))
             
-            self.update_status(f"Loaded {len(guests)} RSVPs for {event_name}")
+            # Update Stats Labels
+            self.total_expected_label.config(text=f"Total Expected: {total_headcount}")
+            self.dietary_alert_label.config(text=f"Dietary Flags: {dietary_count}")
+            
+            self.update_status(f"Loaded {len(guests)} RSVPs | Total: {total_headcount} Expected")
         except Exception as e:
             messagebox.showerror("Supabase Error", f"Failed to load guests:\n{str(e)}")
 
@@ -694,15 +749,27 @@ class PartyManagerApp:
         count = 0
         for g in yes_guests:
             name = g.get('guest_name') or g.get('name') or g.get('email', 'Guest')
-            # Extract phone if present
-            phone = g.get('phone', '') 
+            phone = g.get('phone', '')
+            party_size = g.get('party_size') or g.get('guests') or 1
+            notes = g.get('notes') or g.get('dietary_notes') or ""
             
-            # Check for duplicates? For now, just append.
-            self.guests.append({'Name': name, 'Phone': phone})
+            # Format name with count/notes if they exist, or keep separate?
+            # User expectation: "party_size and notes data is appended to the main list"
+            # Main list treeview only has Name and Phone. 
+            # We'll add it to the 'guests' data dict, but we should probably inform them.
+            
+            new_guest = {
+                'Name': name, 
+                'Phone': phone,
+                'Party Size': party_size,
+                'Notes': notes
+            }
+            
+            self.guests.append(new_guest)
             self.guest_tree.insert('', 'end', values=(name, phone))
             count += 1
             
-        messagebox.showinfo("Import Success", f"Successfully imported {count} attendees to the Guest List Manager!")
+        messagebox.showinfo("Import Success", f"Successfully imported {count} attendees to the Guest List Manager!\n\nDetails (Count/Notes) are preserved in the background data.")
         
         # Switch to first tab
         self.notebook.select(0)
