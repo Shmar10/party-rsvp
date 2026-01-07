@@ -655,7 +655,8 @@ class PartyManagerApp:
             self.cloud_guests = guests # Store for import
             
             for g in guests:
-                name = g.get('guest_name', '') 
+                # Try guest_name first, then fallback to name
+                name = g.get('guest_name') or g.get('name') or g.get('email', 'Unknown')
                 attending = g.get('attending', '')
                 message = g.get('message', '')
                 email = g.get('email', '')
@@ -680,7 +681,7 @@ class PartyManagerApp:
         # Append to main list
         count = 0
         for g in yes_guests:
-            name = g.get('guest_name', 'Guest')
+            name = g.get('guest_name') or g.get('name') or g.get('email', 'Guest')
             # Extract phone if present
             phone = g.get('phone', '') 
             
