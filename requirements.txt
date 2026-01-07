@@ -3,3 +3,4 @@ supabase
 python-dateutil
 tkcalendar
 tkinterdnd2
+resend

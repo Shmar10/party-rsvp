@@ -68,6 +68,18 @@ This tab connects to your Supabase database to see who replied.
 
 ---
 
+## Tab 4: 📨 Email Broadcasts
+
+Need to send a reminder or update to everyone who said "Yes"? Use this tab to blast an email!
+
+1. **Select**: Choose your event to see exactly how many guests you are targeting.
+2. **Compose**: Edit the subject and the message body. 
+3. **Send**: Click "Send to Confirmed Attendees." The app will loop through your list and send them via **Resend**.
+
+⚠️ **Note**: Ensure your Resend API key is saved in `docs/resend_key`.
+
+---
+
 ## Tips & Tricks
 
 - **Keyboard Shortcuts**: Use ENTER to add and DELETE to remove guests.
@@ -78,9 +90,9 @@ This tab connects to your Supabase database to see who replied.
 
 ## Workflow for Success
 
-1. ✅ **Tab 3**: Import old guests from Cloud (if sending reminders).
-2. ✅ **Tab 1**: Upload/Add new guests → Update → Save to Cloud.
-3. ✅ **Tab 2**: Enter party info/upload flyer → Push to GitHub.
-4. ✅ **Phone**: Open file from Cloud → Send Messages!
+1. ✅ **Tab 3**: Import "Yes" guests from Cloud (to refresh your manager list).
+2. ✅ **Tab 4**: Send a broadcast email reminder to those guests.
+3. ✅ **Tab 1**: Update `mobile_sender.html` → Save to Cloud for SMS reminders.
+4. ✅ **Tab 2**: Update flyer/info if needed → Push to GitHub.
 
 Everything is now automated! 🚀🎊

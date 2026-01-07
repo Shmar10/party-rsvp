@@ -13,6 +13,7 @@ from pathlib import Path
 from datetime import datetime
 from supabase import create_client, Client
 import dateutil.parser
+import resend
 
 class ToolTip:
     """Create a tooltip for a given widget"""
@@ -86,6 +87,7 @@ class PartyManagerApp:
         self.create_guest_list_tab()
         self.create_party_details_tab()
         self.create_cloud_rsvps_tab()
+        self.create_broadcasts_tab()
         self.create_help_tab()
         
         # Load event history
@@ -775,8 +777,308 @@ class PartyManagerApp:
         self.notebook.select(0)
         self.update_status(f"Imported {count} guests from cloud")
 
+    def create_broadcasts_tab(self):
+        """Tab 4: Email Broadcasts"""
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="📨 Broadcasts")
+        
+        # Header / Event Selector
+        header_frame = tk.Frame(tab, bg="#f5f5f5")
+        header_frame.pack(pady=20, padx=20, fill='x')
+        
+        tk.Label(
+            header_frame,
+            text="Step 1: Select Your Event",
+            font=("Arial", 12, "bold"),
+            bg="#f5f5f5"
+        ).pack(anchor='w', pady=(0, 10))
+        
+        select_frame = tk.Frame(header_frame, bg="#f5f5f5")
+        select_frame.pack(fill='x')
+        
+        refresh_btn = tk.Button(
+            select_frame, 
+            text="🔄 Refresh Events", 
+            command=self.refresh_broadcast_events, 
+            bg="#6c757d", 
+            fg="white", 
+            font=("Arial", 9, "bold")
+        )
+        refresh_btn.pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.broadcast_event_selector = ttk.Combobox(select_frame, state="readonly", width=40)
+        self.broadcast_event_selector.pack(side=tk.LEFT, padx=10)
+        self.broadcast_event_selector.bind('<<ComboboxSelected>>', lambda e: self.load_broadcast_guests())
+        
+        self.broadcast_target_label = tk.Label(
+            select_frame, 
+            text="Targeting: 0 guests", 
+            font=("Arial", 10, "italic"), 
+            bg="#f5f5f5", 
+            fg="#667eea"
+        )
+        self.broadcast_target_label.pack(side=tk.LEFT, padx=20)
+
+        # Main Content Area (Side-by-Side)
+        content_row = tk.Frame(tab, bg="#f5f5f5")
+        content_row.pack(pady=10, padx=20, fill='both', expand=True)
+        
+        # Left Column: Compose
+        left_col = tk.Frame(content_row, bg="#f5f5f5")
+        left_col.pack(side=tk.LEFT, fill='both', expand=True, padx=(0, 10))
+        
+        tk.Label(
+            left_col,
+            text="Step 2: Compose Your Message",
+            font=("Arial", 12, "bold"),
+            bg="#f5f5f5"
+        ).pack(anchor='w', pady=(0, 10))
+        
+        # Subject
+        subject_frame = tk.Frame(left_col, bg="#f5f5f5")
+        subject_frame.pack(fill='x', pady=(0, 10))
+        tk.Label(subject_frame, text="Subject:", font=("Arial", 10, "bold"), bg="#f5f5f5").pack(side=tk.LEFT)
+        self.email_subject = tk.Entry(subject_frame, font=("Arial", 11))
+        self.email_subject.pack(side=tk.LEFT, fill='x', expand=True, padx=(10, 0))
+        self.email_subject.insert(0, "Reminder for our upcoming party!")
+
+        # Body
+        self.email_body = scrolledtext.ScrolledText(
+            left_col, 
+            font=("Arial", 11), 
+            height=15, 
+            wrap=tk.WORD
+        )
+        self.email_body.pack(fill='both', expand=True)
+        self.email_body.insert(tk.END, "Hi everyone!\n\nJust a quick reminder about the party. We can't wait to see you there!\n\nBest,\n[Your Name]")
+
+        # Right Column: Review
+        right_col = tk.Frame(content_row, bg="#f5f5f5")
+        right_col.pack(side=tk.LEFT, fill='both', expand=True, padx=(10, 0))
+
+        tk.Label(
+            right_col,
+            text="Step 3: Review Recipients & Status",
+            font=("Arial", 12, "bold"),
+            bg="#f5f5f5"
+        ).pack(anchor='w', pady=(0, 10))
+        
+        table_frame = tk.Frame(right_col, bg="#f5f5f5")
+        table_frame.pack(fill='both', expand=True)
+        
+        columns = ('Name', 'Email', 'Status')
+        self.broadcast_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=10)
+        
+        self.broadcast_tree.heading('Name', text='Name')
+        self.broadcast_tree.column('Name', width=120)
+        self.broadcast_tree.heading('Email', text='Email')
+        self.broadcast_tree.column('Email', width=180)
+        self.broadcast_tree.heading('Status', text='Status')
+        self.broadcast_tree.column('Status', width=150)
+        
+        bsb = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.broadcast_tree.yview)
+        self.broadcast_tree.configure(yscroll=bsb.set)
+        self.broadcast_tree.pack(side=tk.LEFT, fill='both', expand=True)
+        bsb.pack(side=tk.RIGHT, fill='y')
+
+        # Footer / Send
+        footer_frame = tk.Frame(tab, bg="#f5f5f5")
+        footer_frame.pack(side=tk.BOTTOM, pady=30, padx=20, fill='x')
+        
+        self.broadcast_status_label = tk.Label(
+            footer_frame,
+            text="Ready to send",
+            font=("Arial", 11, "bold"),
+            bg="#f5f5f5",
+            fg="#6c757d"
+        )
+        self.broadcast_status_label.pack(pady=(0, 15))
+        
+        self.send_broadcast_btn = tk.Button(
+            footer_frame,
+            text="🚀 Send to Confirmed Attendees",
+            command=self.send_broadcast_emails,
+            bg="#667eea",
+            fg="white",
+            font=("Arial", 12, "bold"),
+            padx=50,
+            pady=15,
+            cursor="hand2",
+            state='disabled' # Enable once event is selected
+        )
+        self.send_broadcast_btn.pack()
+        ToolTip(self.send_broadcast_btn, "Blast this email to everyone who RSVP'd 'Yes' for the selected event")
+
+    def refresh_broadcast_events(self):
+        """Fetch unique events for the broadcast dropdown (mirror logic of Cloud RSVPs)"""
+        url = self.sb_url.get().strip()
+        key = self.sb_key.get().strip()
+        if not url or not key:
+            messagebox.showwarning("Connection Missing", "Please enter Supabase credentials in the 'Cloud RSVPs' tab first.")
+            return
+
+        try:
+            supabase: Client = create_client(url, key)
+            response = supabase.table('rsvps').select('event_name, event_date').execute()
+            data = response.data
+            
+            if not data:
+                messagebox.showinfo("No Data", "No RSVPs found in Supabase.")
+                return
+
+            events_map = {}
+            for item in data:
+                name = item.get('event_name', 'Unknown Event')
+                date_str = item.get('event_date', '')
+                full_display = f"{name} ({date_str})" if date_str else name
+                if full_display not in events_map:
+                    events_map[full_display] = date_str
+
+            def sort_key(item):
+                date_val = item[1]
+                if not date_val: return datetime.min
+                try: return dateutil.parser.parse(date_val)
+                except: return datetime.min
+
+            sorted_events = sorted(events_map.items(), key=sort_key, reverse=True)
+            self.broadcast_event_selector['values'] = [e[0] for e in sorted_events]
+            if sorted_events:
+                self.broadcast_event_selector.current(0)
+                self.load_broadcast_guests()
+            
+            self.update_status(f"Retrieved {len(sorted_events)} events for broadcasting")
+        except Exception as e:
+            messagebox.showerror("Supabase Error", str(e))
+
+    def load_broadcast_guests(self):
+        """Load 'Yes' guests for the selected event in Broadcast tab"""
+        full_event = self.broadcast_event_selector.get()
+        if not full_event: return
+
+        event_name = full_event
+        if " (" in full_event and full_event.endswith(")"):
+            event_name = full_event.rsplit(" (", 1)[0]
+
+        url = self.sb_url.get().strip()
+        key = self.sb_key.get().strip()
+        
+        try:
+            supabase: Client = create_client(url, key)
+            # Fetch names as well to show in table - use select('*') to be safe against missing 'name' col
+            response = supabase.table('rsvps').select('*').eq('event_name', event_name).eq('attending', 'yes').execute()
+            data = response.data
+            
+            # Clear previous table entries
+            for item in self.broadcast_tree.get_children():
+                self.broadcast_tree.delete(item)
+            
+            self.broadcast_guests = []
+            
+            for g in data:
+                email = g.get('email')
+                if not email: continue
+                
+                name = g.get('guest_name') or g.get('name') or "Guest"
+                self.broadcast_guests.append({'email': email, 'name': name})
+                
+                # Insert into table
+                self.broadcast_tree.insert('', 'end', values=(name, email, "Pending"))
+            
+            count = len(self.broadcast_guests)
+            self.broadcast_target_label.config(text=f"Targeting: {count} guests with emails")
+            
+            if count > 0:
+                self.send_broadcast_btn.config(state='normal', bg="#667eea")
+            else:
+                self.send_broadcast_btn.config(state='disabled', bg="#cccccc")
+                
+        except Exception as e:
+            messagebox.showerror("Supabase Error", str(e))
+
+    def send_broadcast_emails(self):
+        """Execute the email blast using Resend in a separate thread"""
+        if not hasattr(self, 'broadcast_guests') or not self.broadcast_guests:
+            return
+
+        subject = self.email_subject.get().strip()
+        body = self.email_body.get('1.0', tk.END).strip()
+        
+        if not subject or not body:
+            messagebox.showwarning("Incomplete", "Please provide both a subject and a message.")
+            return
+
+        confirm = messagebox.askyesno(
+            "Confirm Broadcast", 
+            f"Are you sure you want to send this email to {len(self.broadcast_guests)} confirmed guests?"
+        )
+        
+        if not confirm: return
+
+        # Try to load Resend Key
+        key_path = os.path.join(self.project_dir, "docs", "resend_key")
+        resend_key = ""
+        try:
+            with open(key_path, 'r') as f:
+                resend_key = f.read().strip()
+        except:
+            # Check script.js as fallback? No, it's usually not there.
+            messagebox.showerror("Key Missing", "Resend API key not found in docs/resend_key. Please make sure it exists.")
+            return
+
+        if not resend_key:
+            messagebox.showerror("Key Error", "Resend API key is empty.")
+            return
+
+        # Start background thread for sending
+        self.send_broadcast_btn.config(state='disabled', text="⌛ Sending...")
+        thread = threading.Thread(target=self._broadcast_worker, args=(resend_key, subject, body))
+        thread.start()
+
+    def _broadcast_worker(self, key, subject, body):
+        """Background worker for sending emails"""
+        resend.api_key = key
+        total = len(self.broadcast_guests)
+        sent_count = 0
+        fail_count = 0
+        
+        # Get all item IDs from tree to update them
+        tree_items = self.broadcast_tree.get_children()
+        
+        for i, (item_id, guest) in enumerate(zip(tree_items, self.broadcast_guests), 1):
+            email = guest['email']
+            name = guest['name']
+            
+            try:
+                self.broadcast_status_label.config(text=f"Sending to {name} ({i}/{total})...", fg="#667eea")
+                self.broadcast_tree.set(item_id, column='Status', value="Sending...")
+                self.broadcast_tree.see(item_id)
+                self.broadcast_tree.selection_set(item_id)
+                
+                resend.Emails.send({
+                    "from": "Party Manager <onboarding@resend.dev>",
+                    "to": email,
+                    "subject": subject,
+                    "text": body
+                })
+                
+                sent_count += 1
+                self.broadcast_tree.set(item_id, column='Status', value="✅ Sent")
+            except Exception as e:
+                err_msg = str(e)
+                print(f"Failed to send to {email}: {err_msg}")
+                fail_count += 1
+                self.broadcast_tree.set(item_id, column='Status', value=f"❌ Failed: {err_msg}")
+            
+            import time
+            time.sleep(0.1)
+
+        # Final UI update
+        self.broadcast_status_label.config(text=f"Done! {sent_count} sent, {fail_count} failed", fg="#28a745")
+        self.send_broadcast_btn.config(state='normal', text="🚀 Send to Confirmed Attendees")
+        messagebox.showinfo("Blast Complete!", f"Email campaign finished!\n\nSuccessfully sent: {sent_count}\nFailed/Skipped: {fail_count}")
+
     def create_help_tab(self):
-        """Tab 3: User Guide & Help"""
+        """Tab 5: User Guide & Help"""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="📖 User Guide & Help")
         
@@ -829,6 +1131,14 @@ This tool helps you manage your guest list and party website effortlessly.
 3. LOAD: Select an event and click "Load Guests" to see their responses.
 4. IMPORT: Click the big green button to move all "Yes" guests into
    your Guest List Manager instantly!
+
+--------------------------------------------------
+📨 TAB 4: EMAIL BROADCASTS
+--------------------------------------------------
+1. SELECT: Pick an event to see how many "Yes" guests you are targeting.
+2. COMPOSE: Write your subject and message. Use the placeholders provided.
+3. BLAST: Click "Send to Confirmed Attendees" to mail everyone at once!
+   ⚠️ NOTE: This uses your Resend API key from docs/resend_key.
 
 --------------------------------------------------
 🚀 TIPS FOR SUCCESS

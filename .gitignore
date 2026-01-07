@@ -9,3 +9,8 @@ venv/
 *.log
 .party_events_history.json
 docs/resend_key
+google_messages_session/
+_1
+*.db*
+*.wal
+*.shm
