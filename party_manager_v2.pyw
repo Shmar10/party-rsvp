@@ -195,7 +195,61 @@ class PartyManagerApp:
         add_btn.grid(row=0, column=4, padx=5)
         ToolTip(add_btn, "Add this guest to the list below")
         
-        # Guest List Preview
+        # Action Buttons (Steps 3 & 4) - Pack at bottom FIRST to ensure visibility
+        action_frame = tk.Frame(tab, bg="#f5f5f5")
+        action_frame.pack(side=tk.BOTTOM, pady=20, padx=20, fill='x')
+        
+        # Step 3 Frame
+        step3_frame = tk.Frame(action_frame, bg="#f5f5f5")
+        step3_frame.pack(side=tk.LEFT, expand=True)
+        
+        tk.Label(
+            step3_frame,
+            text="Step 3: Update mobile_sender.html",
+            font=("Arial", 12, "bold"),
+            bg="#f5f5f5"
+        ).pack(pady=(0, 5))
+        
+        update_btn = tk.Button(
+            step3_frame,
+            text="✅ Update mobile_sender.html",
+            command=self.update_mobile_sender,
+            bg="#28a745",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            padx=30,
+            pady=10,
+            cursor="hand2"
+        )
+        update_btn.pack()
+        ToolTip(update_btn, "Inject guest list into mobile_sender.html for sending")
+        
+        # Step 4 Frame
+        step4_frame = tk.Frame(action_frame, bg="#f5f5f5")
+        step4_frame.pack(side=tk.LEFT, expand=True)
+
+        tk.Label(
+            step4_frame,
+            text="Step 4: Save To...",
+            font=("Arial", 12, "bold"),
+            bg="#f5f5f5"
+        ).pack(pady=(0, 5))
+        
+        save_btn = tk.Button(
+            step4_frame,
+            text="💾 Save To...",
+            command=self.save_mobile_sender,
+            bg="#17a2b8",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            padx=40,
+            pady=10,
+            cursor="hand2"
+        )
+        save_btn.pack()
+        ToolTip(save_btn, "Save updated mobile_sender.html to a location of your choice")
+
+        # Guest List Preview (Step 2)
         preview_frame = tk.Frame(tab, bg="#f5f5f5")
         preview_frame.pack(pady=10, padx=20, fill='both', expand=True)
         
@@ -227,7 +281,7 @@ class PartyManagerApp:
 
         # Deletion Button
         delete_btn = tk.Button(
-            tab,
+            preview_frame,
             text="🗑️ Delete Selected Guest(s)",
             command=self.delete_selected_guests,
             bg="#dc3545",
@@ -236,62 +290,8 @@ class PartyManagerApp:
             padx=15,
             pady=5
         )
-        delete_btn.pack(pady=5, padx=20, anchor='e')
+        delete_btn.pack(pady=5, anchor='e')
         ToolTip(delete_btn, "Remove the highlighted guests from the list")
-        
-        # Action Buttons (Steps 3 & 4)
-        action_frame = tk.Frame(tab, bg="#f5f5f5")
-        action_frame.pack(pady=30, padx=20, fill='x')
-        
-        # Step 3 Frame
-        step3_frame = tk.Frame(action_frame, bg="#f5f5f5")
-        step3_frame.pack(side=tk.LEFT, expand=True)
-        
-        tk.Label(
-            step3_frame,
-            text="Step 3: Update mobile_sender.html",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(pady=(0, 10))
-        
-        update_btn = tk.Button(
-            step3_frame,
-            text="✅ Update mobile_sender.html",
-            command=self.update_mobile_sender,
-            bg="#28a745",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            padx=30,
-            pady=15,
-            cursor="hand2"
-        )
-        update_btn.pack()
-        ToolTip(update_btn, "Inject guest list into mobile_sender.html for sending")
-        
-        # Step 4 Frame
-        step4_frame = tk.Frame(action_frame, bg="#f5f5f5")
-        step4_frame.pack(side=tk.LEFT, expand=True)
-
-        tk.Label(
-            step4_frame,
-            text="Step 4: Save To...",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(pady=(0, 10))
-        
-        save_btn = tk.Button(
-            step4_frame,
-            text="💾 Save To...",
-            command=self.save_mobile_sender,
-            bg="#17a2b8",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            padx=40,
-            pady=15,
-            cursor="hand2"
-        )
-        save_btn.pack()
-        ToolTip(save_btn, "Save updated mobile_sender.html to a location of your choice")
     
     def create_party_details_tab(self):
         """Tab 2: Party Details"""
