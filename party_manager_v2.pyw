@@ -83,6 +83,7 @@ class PartyManagerApp:
         # Create tabs
         self.create_guest_list_tab()
         self.create_party_details_tab()
+        self.create_help_tab()
         
         # Load event history
         self.load_event_history()
@@ -456,6 +457,64 @@ class PartyManagerApp:
         )
         self.push_btn.pack()
         ToolTip(self.push_btn, "Update index.html and deploy to your website (saves to history)")
+
+    def create_help_tab(self):
+        """Tab 3: User Guide & Help"""
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="📖 User Guide & Help")
+        
+        # Text container
+        help_frame = tk.Frame(tab, bg="white")
+        help_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        help_text = scrolledtext.ScrolledText(
+            help_frame, 
+            wrap=tk.WORD, 
+            font=("Segoe UI", 11),
+            bg="white",
+            fg="#333",
+            padx=20,
+            pady=20,
+            borderwidth=0
+        )
+        help_text.pack(fill='both', expand=True)
+        
+        # Content
+        content = """🎉 Welcome to Party Manager v2.0!
+
+This tool helps you manage your guest list and party website effortlessly.
+
+--------------------------------------------------
+📋 TAB 1: GUEST LIST MANAGER
+--------------------------------------------------
+1. UPLOAD: Click "Upload CSV File" or just drag and drop your guests.csv onto the window.
+2. PREVIEW: Check the table to ensure your guest names and numbers are correct.
+3. PREPARE PHONE: Click "Update mobile_sender.html" once guests are loaded.
+4. SAVE: Use "Save To..." to put the file on your device to send invites via SMS.
+
+--------------------------------------------------
+🎊 TAB 2: PARTY DETAILS
+--------------------------------------------------
+1. ESSENTIAL INFO: Fill in the Event Name, Date, Time, and Location.
+2. RSVP TOGGLE: Use the "RSVP Status" checkbox to open or close your RSVP form.
+3. CHOOSE YOUR STYLE:
+   - 📝 TEXT MODE: Type a description for a simple, clean landing page.
+   - 🖼️ IMAGE MODE: Upload a Canva flyer for a high-impact visual invite.
+4. DEPLOY: Click "Update & Push to GitHub" to make your changes live!
+
+--------------------------------------------------
+🚀 TIPS FOR SUCCESS
+--------------------------------------------------
+• RECENT EVENTS: Use the dropdown at the top of Party Details to reload 
+  information from your previous parties.
+• STATUS BAR: Check the bottom bar for the last time you updated or pushed code.
+• WAIT TIME: After pushing to GitHub, it usually takes 1-2 minutes for your 
+  live website to reflect the changes.
+
+Need more help? Check the 'docs' folder in your project directory!
+"""
+        help_text.insert(tk.END, content)
+        help_text.configure(state='disabled') # Make it read-only
     
     def toggle_detail_mode(self):
         """Toggle between form and image mode"""
