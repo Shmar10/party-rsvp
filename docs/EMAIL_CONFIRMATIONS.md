@@ -10,10 +10,12 @@ You need to add a new column to your `rsvps` table to store the email addresses.
 2.  Open your project and go to the **Table Editor**.
 3.  Select the `rsvps` table.
 4.  Click **Insert** -> **Column** (or use the `+` button on the far right).
-5.  Name the column: `email`
-6.  Type: `text`
-7.  Default Value: `NULL` (uncheck "Is Required").
-8.  Save the changes.
+5.  Name the column: `email` (Type: `text`)
+6.  Name the column: `event_date` (Type: `text`)
+7.  Name the column: `event_time` (Type: `text`)
+8.  Name the column: `event_location` (Type: `text`)
+9.  Default Value: `NULL` for all (uncheck "Is Required").
+10. Save the changes.
 
 ---
 
@@ -39,5 +41,8 @@ Similar to Zapier, you can use **Make.com** to watch for new records in Supabase
 
 ---
 
-## Technical Note: Supabase Edge Functions
-If you are comfortable with coding (TypeScript), you can use a **Supabase Edge Function** combined with a service like [Resend.com](https://resend.com) to send emails directly from Supabase whenever a new RSVP is added.
+### Redeploying the Function
+If you have already deployed this function, you must redeploy it for the changes to take effect:
+
+1.  Open your terminal in the project directory.
+2.  Run: `supabase functions deploy send-rsvp-confirmation`

@@ -58,7 +58,10 @@ rsvpForm.addEventListener('submit', async (e) => {
         notes: formData.get('dietary'),
         message: formData.get('message_host'),
         attending: attending,
-        event_name: eventName
+        event_name: eventName,
+        event_date: pageDate,
+        event_time: pageTime,
+        event_location: pageLocation
     };
 
     try {
