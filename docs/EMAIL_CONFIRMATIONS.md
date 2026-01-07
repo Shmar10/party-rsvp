@@ -42,7 +42,20 @@ Similar to Zapier, you can use **Make.com** to watch for new records in Supabase
 ---
 
 ### Redeploying the Function
-If you have already deployed this function, you must redeploy it for the changes to take effect:
 
-1.  Open your terminal in the project directory.
-2.  Run: `supabase functions deploy send-rsvp-confirmation`
+To push your code changes to Supabase, you first need the **Supabase CLI** installed on your computer. Run these commands in your terminal (VS Code Terminal or PowerShell) from the `party-invite-app` folder:
+
+0.  **Install Supabase CLI** (if you haven't yet):
+    - Run: `npm install -g supabase`
+    - *Note: If this gives an error, you can just add `npx` before the other commands below.*
+
+1.  **Link your project**:
+    - Run: `supabase link --project-ref YOUR_PROJECT_ID`
+    - *Note: You can find your Project ID in your Supabase dashboard URL or under Project Settings > General.*
+2.  **Set your API Key** (if you haven't yet):
+    - Run: `supabase secrets set RESEND_API_KEY=re_gq3QBzW7_DPB1voJR4X2...`
+    - *Note: Use the full key from your `docs/resend_key` file.*
+3.  **Deploy**:
+    - Run: `supabase functions deploy send-rsvp-confirmation`
+
+Once deployed, any new RSVP will trigger this updated function!

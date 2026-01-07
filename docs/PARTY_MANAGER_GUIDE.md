@@ -1,4 +1,4 @@
-# 🎉 Party Manager - User Guide
+# 🎉 Party Manager v2.0 - User Guide
 
 ## What is Party Manager?
 
@@ -6,130 +6,81 @@ Party Manager is a Windows application that helps you set up everything for your
 
 ## Features
 
-✅ **Guest List Management** - Upload CSV, auto-update mobile_sender.html  
-✅ **Party Details** - Fill out form OR upload Canva image  
-✅ **Auto GitHub Push** - Automatically deploys to your website  
-✅ **Easy to Use** - Beautiful GUI, no coding required  
+✅ **Guest List Management** - Manual entry, CSV uploads, and one-click phone prep  
+✅ **Cloud RSVPs** - Fetch guest responses directly from Supabase  
+✅ **Party Details** - Fill out form OR upload Canva flyers  
+✅ **RSVP Toggle** - Open or close RSVPs with a single checkbox  
+✅ **Auto GitHub Push** - Automatically deploys your changes to the web  
 
 ---
 
 ## Getting Started
 
-### First Time Setup
-
-1. **Install Dependencies** (if not already done):
-   ```powershell
-   pip install -r requirements.txt
-   ```
-
-2. **Launch the App**:
-   - Double-click `Start_Party_Manager.bat`
-   - OR run: `pythonw party_manager.pyw`
+### Launch the App
+1. Ensure dependencies are installed: `pip install -r requirements.txt`
+2. Launch: Double-click `Start_Party_Manager.bat` or run `pythonw party_manager_v2.pyw`
 
 ---
 
-## Using the App
+## Tab 1: 📋 Guest List Manager
 
-### Tab 1: Guest List Manager
+This tab is where you prepare your invitation list.
 
 **Step 1: Upload CSV**
-1. Click "📁 Upload CSV File"
-2. Select your `guests.csv` file
-3. Preview shows all guests
+1. Click "📁 Upload CSV File" or drag and drop a CSV anywhere in the window.
+2. The preview will show your names and phone numbers.
 
-**Step 2: Update mobile_sender.html**
-1. Click "✅ Update mobile_sender.html"
-2. Guest data is automatically injected into the file
+**Manual Management**
+- **Add**: Use the "Add/Edit Guest Manually" box to add people fast. Press **ENTER** to submit.
+- **Edit**: Double-click any guest in the list to correct their details.
+- **Delete**: Select one or more guests and press the **DELETE** key.
 
-**Step 3: Save (Optional)**
-1. Click "💾 Save To..."
-2. Choose where to save the updated file
-3. Transfer to your phone via email/Dropbox
+**Step 3 & 4: Prepare for Phone**
+1. Click **"✅ Update mobile_sender.html"** (Step 3). This injects your list into the sender file.
+2. Click **"💾 Save To..."** (Step 4). Save this file to **Dropbox** or **Google Drive**.
+3. Open the file on your phone to start sending invites!
 
 ---
 
-### Tab 2: Party Details
+## Tab 2: 🎊 Party Details
 
-**Option A: Fill Out Form**
-1. Select "📝 Fill out form manually"
-2. Enter:
-   - Event Name (e.g., "Birthday Bash")
-   - Date (e.g., "Saturday, Feb 14th")
-   - Time (e.g., "7:00 PM")
-   - Location (e.g., "The Martin's House")
+**Essential Info**
+1. Fill out the Event Name, Date, Time, and Location.
+2. **RSVP Status**: Check the box to keep RSVPs "Open." Uncheck it to show guests a "closed" message.
 
-**Option B: Upload Canva Image**
-1. Select "🖼️ Upload event image"
-2. Click "Upload Event Image"
-3. Choose your Canva flyer/poster
-4. Image will be displayed on the RSVP page
+**Choose Your Style**
+- **📝 Text Mode**: Type a description for a simple, elegant website.
+- **🖼️ Image Mode**: Upload a Canva flyer for a high-impact visual.
 
-**Push to GitHub**
-1. Click "🚀 Update & Push to GitHub"
-2. App automatically:
-   - Updates `index.html`
-   - Commits changes to Git
-   - Pushes to GitHub
-3. Website updates in ~2 minutes!
+**Deploy**
+1. Click **"🚀 Update & Push to GitHub"**.
+2. Your website (index.html) will update live in ~2 minutes!
+
+---
+
+## Tab 3: ☁️ Cloud RSVPs
+
+This tab connects to your Supabase database to see who replied.
+
+1. **Refresh**: Click "🔄 Refresh Events" to find all your past/future parties.
+2. **Load**: Select a party and click "📥 Load Guests" to see the full list of replies.
+3. **Import**: Click the big green button to move everyone who said **"Yes"** back into your main Guest List Manager (Tab 1). This is perfect for sending text reminders or thank-you notes!
 
 ---
 
 ## Tips & Tricks
 
-### CSV Format
-Your `guests.csv` should look like this:
-```
-Name,Phone
-John Smith,5551234567
-Jane Doe,5559876543
-```
-
-### Canva Images
-- **Recommended Size**: 1200px wide
-- **Format**: PNG or JPG
-- **Content**: Include event name, date, time, location
-
-### Before Each Party
-1. Update your CSV with new guest list
-2. Update Tab 1 (Guest List)
-3. Update Tab 2 (Party Details)
-4. Click "Push to GitHub"
-5. Done! 🎊
-
-### Troubleshooting
-
-**"Git operation failed"**
-- Make sure you're in the correct project directory
-- Ensure Git is configured with your GitHub credentials
-- Try pulling latest changes first: `git pull origin main`
-
-**"File not found"**
-- Make sure you're running the app from the `party-invite-app` directory
-- Check that `index.html` and `mobile_sender.html` exist
-
-**Changes not showing on website**
-- Wait 2-3 minutes for GitHub Pages to redeploy
-- Hard refresh your browser: `Ctrl + Shift + R`
+- **Keyboard Shortcuts**: Use ENTER to add and DELETE to remove guests.
+- **Cloud Saving**: Always save your `mobile_sender.html` to a cloud folder. That way, you don't need to email it—just open the cloud app on your phone!
+- **History**: Use the dropdown at the top of Party Details to quickly reload information from your last party.
 
 ---
 
-## Workflow for Each New Party
+## Workflow for Success
 
-1. ✅ Create new guest list CSV
-2. ✅ Open Party Manager
-3. ✅ Tab 1: Upload CSV → Update → Save
-4. ✅ Tab 2: Enter details OR upload image
-5. ✅ Click "Push to GitHub"
-6. ✅ Transfer mobile_sender.html to phone
-7. ✅ Send invites!
+1. ✅ **Tab 3**: Import old guests from Cloud (if sending reminders).
+2. ✅ **Tab 1**: Upload/Add new guests → Update → Save to Cloud.
+3. ✅ **Tab 2**: Enter party info/upload flyer → Push to GitHub.
+4. ✅ **Phone**: Open file from Cloud → Send Messages!
 
----
-
-## Questions?
-
-The Party Manager saves you time by automating:
-- Manual HTML editing
-- Git commands
-- File transfers
-
-Everything is now just a few clicks away! 🚀
+Everything is now automated! 🚀🎊

@@ -737,33 +737,38 @@ This tool helps you manage your guest list and party website effortlessly.
 --------------------------------------------------
 📋 TAB 1: GUEST LIST MANAGER
 --------------------------------------------------
-1. UPLOAD: Click "Upload CSV File" or just drag and drop your guests.csv onto the window.
-2. MANAGE: Use the "Add/Edit Guest Manually" box to add new people without a CSV.
-3. EDIT: Double-click any guest in the list to correct their name or number.
-4. DELETE: Use "Delete Selected Guest(s)" to remove someone from the list.
-5. PREPARE PHONE: Click "Update mobile_sender.html" once guests are loaded.
-6. SAVE/CLOUD: Use "Save To..." to put the file on your device. 
-   💡 TIP: You can save this file to Dropbox/Google Drive and open it from 
-   the cloud on your phone to start sending invites instantly!
+1. UPLOAD (Step 1): Click "Upload CSV File" or drag and drop a CSV.
+2. MANAGE: Add people manually or double-click any row to edit details.
+3. PREVIEW (Step 2): Use "Delete Selected" if you need to remove anyone.
+4. GENERATE (Step 3): Click "Update mobile_sender.html" to prep your list.
+5. SAVE (Step 4): Use "Save To..." to put the file on your device.
+   💡 TIP: Save to Dropbox or Google Drive to open it easily on your phone!
 
 --------------------------------------------------
 🎊 TAB 2: PARTY DETAILS
 --------------------------------------------------
 1. ESSENTIAL INFO: Fill in the Event Name, Date, Time, and Location.
-2. RSVP TOGGLE: Use the "RSVP Status" checkbox to open or close your RSVP form.
+2. RSVP TOGGLE: Use "RSVP Status" to open or close your web form.
 3. CHOOSE YOUR STYLE:
-   - 📝 TEXT MODE: Type a description for a simple, clean landing page.
-   - 🖼️ IMAGE MODE: Upload a Canva flyer for a high-impact visual invite.
-4. DEPLOY: Click "Update & Push to GitHub" to make your changes live!
+   - 📝 TEXT MODE: Type a description for a clean landing page.
+   - 🖼️ IMAGE MODE: Upload a Canva flyer for a high-impact visual!
+4. DEPLOY: Click "Update & Push to GitHub" to make your website live.
+
+--------------------------------------------------
+☁️ TAB 3: CLOUD RSVPs
+--------------------------------------------------
+1. CONNECT: Your Supabase URL and Key are pre-filled from your settings.
+2. REFRESH: Click "Refresh Events" to see all parties in your database.
+3. LOAD: Select an event and click "Load Guests" to see their responses.
+4. IMPORT: Click the big green button to move all "Yes" guests into
+   your Guest List Manager instantly!
 
 --------------------------------------------------
 🚀 TIPS FOR SUCCESS
 --------------------------------------------------
-• RECENT EVENTS: Use the dropdown at the top of Party Details to reload 
-  information from your previous parties.
-• STATUS BAR: Check the bottom bar for the last time you updated or pushed code.
-• WAIT TIME: After pushing to GitHub, it usually takes 1-2 minutes for your 
-  live website to reflect the changes.
+• KEYBOARD: Press ENTER to add guests fast. Press DELETE to remove them.
+• RECENT: Use the dropdown in Party Details to reload past event info.
+• WAIT TIME: It takes 1-2 minutes for GitHub to update your live site.
 
 Need more help? Check the 'docs' folder in your project directory!
 """
