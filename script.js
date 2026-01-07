@@ -42,6 +42,21 @@ rsvpForm.addEventListener('submit', async (e) => {
     // Get event name from page
     const eventName = document.querySelector('.container').getAttribute('data-event-name') || 'Unknown Event';
 
+    // Helper to find detail text by icon emoji
+    const findDetail = (emoji) => {
+        const items = document.querySelectorAll('.detail-item');
+        for (const item of items) {
+            if (item.textContent.includes(emoji)) {
+                return item.querySelector('span:last-child')?.textContent || '';
+            }
+        }
+        return '';
+    };
+
+    const pageDate = findDetail('📅');
+    const pageTime = findDetail('⏰');
+    const pageLocation = findDetail('📍');
+
     // Check for duplicate submission (basic client-side check)
     const submittedKey = `rsvp_submitted_${guestName.toLowerCase().replace(/\s+/g, '_')}`;
     if (localStorage.getItem(submittedKey)) {
@@ -75,25 +90,9 @@ rsvpForm.addEventListener('submit', async (e) => {
         localStorage.setItem(submittedKey, 'true');
 
         // Redirect to thank you page with all event details for calendar
-        const pageEventName = document.querySelector('.container').getAttribute('data-event-name') || eventName;
-
-        // Helper to find detail text by icon emoji
-        const findDetail = (emoji) => {
-            const items = document.querySelectorAll('.detail-item');
-            for (const item of items) {
-                if (item.textContent.includes(emoji)) {
-                    return item.querySelector('span:last-child')?.textContent || '';
-                }
-            }
-            return '';
-        };
-
-        const pageDate = findDetail('📅');
-        const pageTime = findDetail('⏰');
-        const pageLocation = findDetail('📍');
         const params = new URLSearchParams({
             attending: attending,
-            event: pageEventName,
+            event: eventName,
             date: pageDate,
             time: pageTime,
             location: pageLocation
