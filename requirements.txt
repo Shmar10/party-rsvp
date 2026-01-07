@@ -1,4 +1,5 @@
-selenium
 pandas
+supabase
+python-dateutil
 tkcalendar
 tkinterdnd2

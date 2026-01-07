@@ -11,6 +11,8 @@ import json
 import threading
 from pathlib import Path
 from datetime import datetime
+from supabase import create_client, Client
+import dateutil.parser
 
 class ToolTip:
     """Create a tooltip for a given widget"""
@@ -83,6 +85,7 @@ class PartyManagerApp:
         # Create tabs
         self.create_guest_list_tab()
         self.create_party_details_tab()
+        self.create_cloud_rsvps_tab()
         self.create_help_tab()
         
         # Load event history
@@ -502,6 +505,196 @@ class PartyManagerApp:
         )
         self.push_btn.pack()
         ToolTip(self.push_btn, "Update index.html and deploy to your website (saves to history)")
+
+    def create_cloud_rsvps_tab(self):
+        """Tab 3: Cloud RSVPs (Supabase Integration)"""
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="☁️ Cloud RSVPs")
+        
+        # Credentials Frame
+        cred_frame = tk.LabelFrame(tab, text="Supabase Connection", font=("Arial", 10, "bold"), bg="#f5f5f5", padx=15, pady=10)
+        cred_frame.pack(pady=10, padx=20, fill='x')
+
+        # Try to find credentials from script.js
+        default_url = ""
+        default_key = ""
+        try:
+            script_path = os.path.join(self.project_dir, "script.js")
+            if os.path.exists(script_path):
+                with open(script_path, 'r', encoding='utf-8') as f:
+                    js_content = f.read()
+                    url_match = re.search(r"const SUPABASE_URL = '(.*?)';", js_content)
+                    key_match = re.search(r"const SUPABASE_KEY = '(.*?)';", js_content)
+                    if url_match: default_url = url_match.group(1)
+                    if key_match: default_key = key_match.group(1)
+        except: pass
+
+        tk.Label(cred_frame, text="URL:", bg="#f5f5f5").grid(row=0, column=0, sticky='w')
+        self.sb_url = tk.Entry(cred_frame, font=("Arial", 9), width=50)
+        self.sb_url.grid(row=0, column=1, padx=10, pady=2)
+        self.sb_url.insert(0, default_url)
+
+        tk.Label(cred_frame, text="Key:", bg="#f5f5f5").grid(row=1, column=0, sticky='w')
+        self.sb_key = tk.Entry(cred_frame, font=("Arial", 9), width=50)
+        self.sb_key.grid(row=1, column=1, padx=10, pady=2)
+        self.sb_key.insert(0, default_key)
+
+        # Event Selector Frame
+        select_frame = tk.Frame(tab, bg="#f5f5f5")
+        select_frame.pack(pady=10, padx=20, fill='x')
+
+        refresh_btn = tk.Button(select_frame, text="🔄 Refresh Events", command=self.refresh_cloud_events, bg="#6c757d", fg="white", font=("Arial", 9, "bold"))
+        refresh_btn.pack(side=tk.LEFT, padx=(0, 10))
+
+        tk.Label(select_frame, text="Select Event:", bg="#f5f5f5").pack(side=tk.LEFT)
+        self.cloud_event_selector = ttk.Combobox(select_frame, state="readonly", width=40)
+        self.cloud_event_selector.pack(side=tk.LEFT, padx=10)
+        
+        load_btn = tk.Button(select_frame, text="📥 Load Guests", command=self.load_cloud_guests, bg="#667eea", fg="white", font=("Arial", 9, "bold"))
+        load_btn.pack(side=tk.LEFT)
+
+        # Data View (Treeview)
+        list_frame = tk.Frame(tab, bg="#f5f5f5")
+        list_frame.pack(pady=10, padx=20, fill='both', expand=True)
+
+        columns = ('Name', 'Attending', 'Message', 'Email')
+        self.cloud_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=10)
+        
+        for col in columns:
+            self.cloud_tree.heading(col, text=col)
+            self.cloud_tree.column(col, width=100)
+        
+        sb = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.cloud_tree.yview)
+        self.cloud_tree.configure(yscroll=sb.set)
+        self.cloud_tree.pack(side=tk.LEFT, fill='both', expand=True)
+        sb.pack(side=tk.RIGHT, fill='y')
+
+        # Footer
+        import_btn = tk.Button(
+            tab,
+            text="✅ Import 'Yes' Guests to Manager",
+            command=self.import_yes_guests,
+            bg="#28a745",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            padx=30,
+            pady=10
+        )
+        import_btn.pack(pady=20)
+
+    def refresh_cloud_events(self):
+        """Fetch unique events from Supabase and sort chronologically"""
+        url = self.sb_url.get().strip()
+        key = self.sb_key.get().strip()
+        if not url or not key:
+            messagebox.showwarning("Incomplete Connection", "Please provide both Supabase URL and Key.")
+            return
+
+        try:
+            supabase: Client = create_client(url, key)
+            # Query rsvps for names and dates
+            response = supabase.table('rsvps').select('event_name, event_date').execute()
+            data = response.data
+            
+            if not data:
+                messagebox.showinfo("No Data", "No RSVPs found in the database.")
+                return
+
+            # Group and sort events
+            events_map = {} # name -> date
+            for item in data:
+                name = item.get('event_name', 'Unknown Event')
+                date_str = item.get('event_date', '')
+                # If we have multiple dates for one event name, keep the latest one for sorting? 
+                # Or treat them as unique? Users usually want unique names or name (date).
+                full_display = f"{name} ({date_str})" if date_str else name
+                if full_display not in events_map:
+                    events_map[full_display] = date_str
+
+            # Sort helper: parse dates or fallback to string
+            def sort_key(item):
+                date_val = item[1]
+                if not date_val: return datetime.min
+                try:
+                    return dateutil.parser.parse(date_val)
+                except:
+                    return datetime.min
+
+            sorted_events = sorted(events_map.items(), key=sort_key, reverse=True)
+            self.cloud_event_selector['values'] = [e[0] for e in sorted_events]
+            if sorted_events:
+                self.cloud_event_selector.current(0)
+            
+            self.update_status(f"Found {len(sorted_events)} unique events")
+        except Exception as e:
+            messagebox.showerror("Supabase Error", f"Failed to fetch events:\n{str(e)}")
+
+    def load_cloud_guests(self):
+        """Fetch guest RSVPs for the selected event name"""
+        full_event = self.cloud_event_selector.get()
+        if not full_event:
+            return
+
+        # Extract event_name from "Name (Date)" or use as is
+        event_name = full_event
+        if " (" in full_event and full_event.endswith(")"):
+            event_name = full_event.rsplit(" (", 1)[0]
+
+        url = self.sb_url.get().strip()
+        key = self.sb_key.get().strip()
+        
+        try:
+            supabase: Client = create_client(url, key)
+            response = supabase.table('rsvps').select('*').eq('event_name', event_name).execute()
+            guests = response.data
+            
+            # Clear tree
+            for item in self.cloud_tree.get_children():
+                self.cloud_tree.delete(item)
+            
+            self.cloud_guests = guests # Store for import
+            
+            for g in guests:
+                name = g.get('name', '')
+                attending = g.get('attending', '')
+                message = g.get('message', '')
+                email = g.get('email', '')
+                self.cloud_tree.insert('', 'end', values=(name, attending, message, email))
+            
+            self.update_status(f"Loaded {len(guests)} RSVPs for {event_name}")
+        except Exception as e:
+            messagebox.showerror("Supabase Error", f"Failed to load guests:\n{str(e)}")
+
+    def import_yes_guests(self):
+        """Import 'yes' guests to the main Guest List Manager tab"""
+        if not hasattr(self, 'cloud_guests') or not self.cloud_guests:
+            messagebox.showwarning("No Data", "Please load guests for an event first.")
+            return
+
+        yes_guests = [g for g in self.cloud_guests if str(g.get('attending', '')).lower() == 'yes']
+        
+        if not yes_guests:
+            messagebox.showinfo("No Attendees", "There are no guests attending ('yes') this event to import.")
+            return
+
+        # Append to main list
+        count = 0
+        for g in yes_guests:
+            name = g.get('name', 'Guest')
+            # Extract phone if present (usually Supabase might not have it unless added, but rsvps usually collected Name/Guests/Message/Email)
+            # Some rows might have it if we added it, otherwise we'll leave it blank.
+            phone = g.get('phone', '') 
+            
+            # Check for duplicates? For now, just append.
+            self.guests.append({'Name': name, 'Phone': phone})
+            self.guest_tree.insert('', 'end', values=(name, phone))
+            count += 1
+            
+        messagebox.showinfo("Import Success", f"Successfully imported {count} attendees to the Guest List Manager!")
+        
+        # Switch to first tab
+        self.notebook.select(0)
+        self.update_status(f"Imported {count} guests from cloud")
 
     def create_help_tab(self):
         """Tab 3: User Guide & Help"""
