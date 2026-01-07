@@ -73,6 +73,9 @@ class PartyManagerApp:
         self.progress_bar = None
         self.progress_label = None
         
+        # RSVP status
+        self.rsvp_open = tk.BooleanVar(value=True)
+        
         # Create main notebook (tabs)
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
@@ -332,6 +335,26 @@ class PartyManagerApp:
         self.event_location.insert(0, "The Martin's Lanai")
         ToolTip(self.event_location, "Location for the calendar invite")
         
+        # RSVP Open Toggle
+        tk.Label(
+            info_frame,
+            text="RSVP Status:",
+            font=("Arial", 11, "bold"),
+            bg="#f5f5f5"
+        ).grid(row=4, column=0, sticky='w', pady=5)
+        
+        self.rsvp_toggle = tk.Checkbutton(
+            info_frame,
+            text="RSVP Form is Open & Accepting Responses",
+            variable=self.rsvp_open,
+            font=("Arial", 11),
+            bg="#f5f5f5",
+            activebackground="#f5f5f5",
+            cursor="hand2"
+        )
+        self.rsvp_toggle.grid(row=4, column=1, pady=5, sticky='w')
+        ToolTip(self.rsvp_toggle, "Uncheck this to temporarily disable the RSVP form on your website")
+        
         info_frame.columnconfigure(1, weight=1)
 
         # Separator
@@ -579,6 +602,9 @@ class PartyManagerApp:
             with open(index_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             
+            # Update script.js with RSVP status
+            self.update_script_js()
+            
             # Show progress and start threaded git operations
             self.show_progress("Deploying to GitHub...")
             self.threaded_git_push()
@@ -698,6 +724,29 @@ class PartyManagerApp:
         
         return content
     
+    def update_script_js(self):
+        """Update RSVP_OPEN constant in script.js"""
+        try:
+            script_path = os.path.join(self.project_dir, "script.js")
+            if not os.path.exists(script_path):
+                return
+            
+            with open(script_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Update RSVP_OPEN constant
+            state = "true" if self.rsvp_open.get() else "false"
+            new_content = re.sub(
+                r'const RSVP_OPEN = (true|false);',
+                f'const RSVP_OPEN = {state};',
+                content
+            )
+            
+            with open(script_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+        except Exception as e:
+            print(f"Error updating script.js: {e}")
+
     def update_status(self, message):
         """Update status bar with timestamp"""
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -725,6 +774,7 @@ class PartyManagerApp:
             "date": self.event_date.get(),
             "time": self.event_time.get(),
             "location": self.event_location.get(),
+            "rsvp_open": self.rsvp_open.get(),
             "timestamp": datetime.now().isoformat()
         }
         
@@ -762,6 +812,8 @@ class PartyManagerApp:
         
         self.event_location.delete(0, tk.END)
         self.event_location.insert(0, event.get("location", ""))
+        
+        self.rsvp_open.set(event.get("rsvp_open", True))
         
         self.update_status("Event loaded from history")
     

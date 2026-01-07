@@ -2,13 +2,31 @@
 const SUPABASE_URL = 'https://yupowktiegsjzcymqhkw.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1cG93a3RpZWdzanpjeW1xaGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2MjA3NTAsImV4cCI6MjA4MzE5Njc1MH0.AiqEpxjmMc3rczfzHx8b-omVAwJUhflIL849nNTqDwQ';
 
-// Initialize Supabase client (renamed to avoid browser extension conflicts)
+// Toggle to open or close the RSVP form
+const RSVP_OPEN = true;
+
+// Initialize Supabase client
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // DOM Elements
 const rsvpForm = document.getElementById('rsvpForm');
 const submitBtn = document.getElementById('submitBtn');
 const messageEl = document.getElementById('message');
+const rsvpSection = document.querySelector('.rsvp-card');
+const rsvpClosedMessage = document.getElementById('rsvpClosedMessage');
+
+// Initialize view based on RSVP_OPEN status
+function initRSVPView() {
+    if (!RSVP_OPEN) {
+        if (rsvpForm) rsvpForm.classList.add('hidden');
+        if (rsvpClosedMessage) rsvpClosedMessage.classList.remove('hidden');
+        const rsvpTitle = document.querySelector('.rsvp-card h2');
+        if (rsvpTitle) rsvpTitle.classList.add('hidden');
+    }
+}
+
+// Run on load
+document.addEventListener('DOMContentLoaded', initRSVPView);
 
 /**
  * Show feedback message to the user
@@ -24,6 +42,11 @@ function showMessage(text, type) {
  */
 rsvpForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    if (!RSVP_OPEN) {
+        showMessage('RSVPs are currently closed.', 'error');
+        return;
+    }
 
     if (!supabaseClient) {
         showMessage('Supabase failed to initialize. Please check your configuration.', 'error');
