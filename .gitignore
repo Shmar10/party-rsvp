@@ -7,3 +7,5 @@ venv/
 .vscode/
 .idea/
 *.log
+.party_events_history.json
+docs/resend_key
