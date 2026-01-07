@@ -833,6 +833,15 @@ class PartyManagerApp:
             font=("Arial", 12, "bold"),
             bg="#f5f5f5"
         ).pack(anchor='w', pady=(0, 10))
+
+        # From Email (New)
+        from_frame = tk.Frame(left_col, bg="#f5f5f5")
+        from_frame.pack(fill='x', pady=(0, 10))
+        tk.Label(from_frame, text="From Email:", font=("Arial", 10, "bold"), bg="#f5f5f5").pack(side=tk.LEFT)
+        self.email_from = tk.Entry(from_frame, font=("Arial", 11))
+        self.email_from.pack(side=tk.LEFT, fill='x', expand=True, padx=(10, 0))
+        self.email_from.insert(0, "invites@shmarten.com")
+        ToolTip(self.email_from, "Your verified Resend domain email (e.g., hello@shmarten.com)")
         
         # Subject
         subject_frame = tk.Frame(left_col, bg="#f5f5f5")
@@ -974,6 +983,16 @@ class PartyManagerApp:
             
             self.broadcast_guests = []
             
+            # Extract event details for the template from the first row if available
+            event_date = "Soon"
+            event_time = "TBD"
+            event_location = "The Party Location"
+            
+            if data:
+                event_date = data[0].get('event_date') or event_date
+                event_time = data[0].get('event_time') or event_time
+                event_location = data[0].get('event_location') or event_location
+
             for g in data:
                 email = g.get('email')
                 if not email: continue
@@ -984,6 +1003,15 @@ class PartyManagerApp:
                 # Insert into table
                 self.broadcast_tree.insert('', 'end', values=(name, email, "Pending"))
             
+            # Update default email body template with dynamic data
+            self.email_body.delete('1.0', tk.END)
+            self.email_body.insert(tk.END, 
+                f"Hi everyone!\n\n"
+                f"Just a quick reminder about the party on {event_date} at {event_time} at {event_location}. "
+                f"We can't wait to see you there!\n\n"
+                f"Best,\n"
+                f"[Your Name]"
+            )
             count = len(self.broadcast_guests)
             self.broadcast_target_label.config(text=f"Targeting: {count} guests with emails")
             
@@ -1002,10 +1030,15 @@ class PartyManagerApp:
 
         subject = self.email_subject.get().strip()
         body = self.email_body.get('1.0', tk.END).strip()
+        sender = self.email_from.get().strip()
         
-        if not subject or not body:
-            messagebox.showwarning("Incomplete", "Please provide both a subject and a message.")
+        if not subject or not body or not sender:
+            messagebox.showwarning("Incomplete", "Please provide From Email, Subject, and Message.")
             return
+
+        if "onboarding@resend.dev" in sender and len(self.broadcast_guests) > 1:
+            if not messagebox.askyesno("Sandbox Warning", "You are using the Resend test email. In Sandbox mode, you can usually only send to yourself.\n\nContinue anyway?"):
+                return
 
         confirm = messagebox.askyesno(
             "Confirm Broadcast", 
@@ -1031,10 +1064,10 @@ class PartyManagerApp:
 
         # Start background thread for sending
         self.send_broadcast_btn.config(state='disabled', text="⌛ Sending...")
-        thread = threading.Thread(target=self._broadcast_worker, args=(resend_key, subject, body))
+        thread = threading.Thread(target=self._broadcast_worker, args=(resend_key, sender, subject, body))
         thread.start()
 
-    def _broadcast_worker(self, key, subject, body):
+    def _broadcast_worker(self, key, sender, subject, body):
         """Background worker for sending emails"""
         resend.api_key = key
         total = len(self.broadcast_guests)
@@ -1055,7 +1088,7 @@ class PartyManagerApp:
                 self.broadcast_tree.selection_set(item_id)
                 
                 resend.Emails.send({
-                    "from": "Party Manager <onboarding@resend.dev>",
+                    "from": f"Party Manager <{sender}>",
                     "to": email,
                     "subject": subject,
                     "text": body

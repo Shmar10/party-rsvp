@@ -14,3 +14,5 @@ _1
 *.db*
 *.wal
 *.shm
+error_*.png
+*.png.png
