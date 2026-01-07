@@ -597,7 +597,7 @@ class PartyManagerApp:
             data = response.data
             
             if not data:
-                messagebox.showinfo("No Data", "No RSVPs found in the database.")
+                messagebox.showinfo("No Data", "No RSVPs found in the database. If you have data, check your Supabase 'RLS' policies to ensure 'Select' is allowed for 'anon' users.")
                 return
 
             # Group and sort events
@@ -655,7 +655,7 @@ class PartyManagerApp:
             self.cloud_guests = guests # Store for import
             
             for g in guests:
-                name = g.get('name', '')
+                name = g.get('guest_name', '') 
                 attending = g.get('attending', '')
                 message = g.get('message', '')
                 email = g.get('email', '')
@@ -680,9 +680,8 @@ class PartyManagerApp:
         # Append to main list
         count = 0
         for g in yes_guests:
-            name = g.get('name', 'Guest')
-            # Extract phone if present (usually Supabase might not have it unless added, but rsvps usually collected Name/Guests/Message/Email)
-            # Some rows might have it if we added it, otherwise we'll leave it blank.
+            name = g.get('guest_name', 'Guest')
+            # Extract phone if present
             phone = g.get('phone', '') 
             
             # Check for duplicates? For now, just append.
