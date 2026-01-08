@@ -126,6 +126,11 @@
                 📅 Add to Calendar
             </button>
             <br>
+            <button class="calendar-btn" id="addToGoogleCalendarBtn"
+                style="display: none; background-color: #4285F4; margin-top: 5px;" onclick="addToGoogleCalendar()">
+                📅 Add to Google Calendar (Android)
+            </button>
+            <br>
             <a href="index.html" class="back-btn">← Back to Home</a>
         </div>
     </main>
@@ -144,6 +149,7 @@
         const textEl = document.getElementById('text');
         const reminderEl = document.getElementById('reminder');
         const addCalendarBtn = document.getElementById('addToCalendarBtn');
+        const addGoogleCalendarBtn = document.getElementById('addToGoogleCalendarBtn');
 
         // Store event details in data attributes
         const mainEl = document.querySelector('.thank-you-container');
@@ -158,6 +164,7 @@
             textEl.textContent = "Your RSVP has been received. We're so excited you can make it! Get ready for an unforgettable evening of great music, drinks, and amazing company.";
             reminderEl.style.display = 'block';
             addCalendarBtn.style.display = 'inline-block';
+            addGoogleCalendarBtn.style.display = 'inline-block';
 
             // Update detail display
             document.getElementById('detailDate').textContent = eventDate;
@@ -195,6 +202,32 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        function addToGoogleCalendar() {
+            const name = mainEl.getAttribute('data-event-name');
+            const date = mainEl.getAttribute('data-event-date');
+            const time = mainEl.getAttribute('data-event-time');
+            const location = mainEl.getAttribute('data-event-location');
+
+            const startDate = parseEventDateTime(date, time);
+            const endDate = new Date(startDate.getTime() + (3 * 60 * 60 * 1000)); // 3 hours duration
+
+            const formatDate = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            };
+
+            const startStr = formatDate(startDate);
+            const endStr = formatDate(endDate);
+
+            const url = new URL('https://calendar.google.com/calendar/render');
+            url.searchParams.append('action', 'TEMPLATE');
+            url.searchParams.append('text', name);
+            url.searchParams.append('dates', `${startStr}/${endStr}`);
+            url.searchParams.append('details', 'RSVP confirmed. See you there!');
+            url.searchParams.append('location', location);
+
+            window.location.href = url.toString();
         }
 
         function parseEventDateTime(dateStr, timeStr) {

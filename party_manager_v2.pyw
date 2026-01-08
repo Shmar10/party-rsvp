@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, scrolledtext
+from tkinter import filedialog, messagebox, scrolledtext, ttk
 from tkcalendar import DateEntry
 from tkinterdnd2 import DND_FILES, TkinterDnD
+import customtkinter as ctk
 import pandas as pd
 import os
 import subprocess
@@ -14,6 +15,10 @@ from datetime import datetime
 from supabase import create_client, Client
 import dateutil.parser
 import resend
+
+# Set appearance and theme
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
 
 class ToolTip:
     """Create a tooltip for a given widget"""
@@ -55,8 +60,7 @@ class PartyManagerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("🎉 Party Manager v2.0")
-        self.root.geometry("950x750")
-        self.root.configure(bg="#f5f5f5")
+        self.root.geometry("1100x850")
         
         # Get project directory
         self.project_dir = os.getcwd()
@@ -79,247 +83,273 @@ class PartyManagerApp:
         # RSVP status
         self.rsvp_open = tk.BooleanVar(value=True)
         
-        # Create main notebook (tabs)
-        self.notebook = ttk.Notebook(root)
-        self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
+        # Create main tabview (replacement for Notebook)
+        self.tabview = ctk.CTkTabview(root)
+        self.tabview.pack(fill='both', expand=True, padx=10, pady=10)
         
-        # Create tabs
-        self.create_guest_list_tab()
-        self.create_party_details_tab()
-        self.create_cloud_rsvps_tab()
-        self.create_broadcasts_tab()
-        self.create_help_tab()
+        # Add tabs
+        self.tab_guest_list = self.tabview.add("📋 Guest List Manager")
+        self.tab_party_details = self.tabview.add("🎊 Party Details")
+        self.tab_cloud_rsvps = self.tabview.add("☁️ Cloud RSVPs")
+        self.tab_broadcasts = self.tabview.add("📨 Broadcasts")
+        self.tab_help = self.tabview.add("📖 User Guide & Help")
+        
+        # Initialize tabs
+        self.create_guest_list_tab(self.tab_guest_list)
+        self.create_party_details_tab(self.tab_party_details)
+        self.create_cloud_rsvps_tab(self.tab_cloud_rsvps)
+        self.create_broadcasts_tab(self.tab_broadcasts)
+        self.create_help_tab(self.tab_help)
         
         # Load event history
         self.load_event_history()
         
         # Status bar with timestamp
-        self.status_bar = tk.Label(
+        self.status_bar = ctk.CTkLabel(
             root, 
             text="Ready | Party Manager v2.0", 
-            bd=1, 
-            relief=tk.SUNKEN, 
             anchor=tk.W,
-            bg="#667eea",
-            fg="white",
-            font=("Arial", 10)
+            fg_color="#1e1e1e",
+            text_color="white",
+            font=("Arial", 12)
         )
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
     
-    def create_guest_list_tab(self):
+    def create_guest_list_tab(self, tab):
         """Tab 1: Guest List Manager"""
-        tab = ttk.Frame(self.notebook)
-        self.notebook.add(tab, text="📋 Guest List Manager")
-        
-        # Enable drag and drop on the entire tab
+        # Enable drag and drop
         try:
             tab.drop_target_register(DND_FILES)
             tab.dnd_bind('<<Drop>>', self.handle_csv_drop)
-        except:
-            pass  # Drag and drop not available
+        except: pass
         
         # Title
-        title = tk.Label(
+        title = ctk.CTkLabel(
             tab, 
             text="Guest List Manager", 
-            font=("Arial", 18, "bold"),
-            bg="#f5f5f5"
+            font=("Arial", 22, "bold")
         )
         title.pack(pady=10)
         
         # Drag and drop hint
-        drag_hint = tk.Label(
+        drag_hint = ctk.CTkLabel(
             tab,
             text="💡 Tip: Drag and drop your CSV file anywhere in this window!",
-            font=("Arial", 10, "italic"),
-            fg="#667eea",
-            bg="#f5f5f5"
+            font=("Arial", 12, "italic"),
+            text_color="#667eea"
         )
         drag_hint.pack()
         
         # Upload CSV Section
-        upload_frame = tk.Frame(tab, bg="#f5f5f5")
+        upload_frame = ctk.CTkFrame(tab)
         upload_frame.pack(pady=10, padx=20, fill='x')
         
-        tk.Label(
+        ctk.CTkLabel(
             upload_frame, 
             text="Step 1: Upload Guest List (CSV)", 
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(anchor='w')
+            font=("Arial", 14, "bold")
+        ).pack(anchor='w', padx=10, pady=(5, 0))
         
-        upload_btn = tk.Button(
+        upload_btn = ctk.CTkButton(
             upload_frame,
             text="📁 Upload CSV File",
             command=self.upload_csv,
-            bg="#667eea",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            padx=20,
-            pady=10,
-            cursor="hand2"
+            font=("Arial", 12, "bold"),
+            height=40
         )
-        upload_btn.pack(anchor='w', pady=5)
+        upload_btn.pack(anchor='w', pady=10, padx=10)
         ToolTip(upload_btn, "Select your guests.csv file with Name and Phone columns")
         
-        self.csv_status = tk.Label(
+        self.csv_status = ctk.CTkLabel(
             upload_frame,
             text="No file selected",
-            font=("Arial", 10),
-            fg="#888",
-            bg="#f5f5f5"
+            font=("Arial", 12),
+            text_color="#888"
         )
-        self.csv_status.pack(anchor='w')
+        self.csv_status.pack(anchor='w', padx=10, pady=(0, 5))
 
         # Manual Entry Section
-        manual_frame = tk.LabelFrame(tab, text="Add/Edit Guest Manually", font=("Arial", 11, "bold"), bg="#f5f5f5", padx=15, pady=10)
+        manual_frame = ctk.CTkFrame(tab)
         manual_frame.pack(pady=10, padx=20, fill='x')
 
-        tk.Label(manual_frame, text="Name:", bg="#f5f5f5", font=("Arial", 10)).grid(row=0, column=0, sticky='w')
-        self.manual_name = tk.Entry(manual_frame, font=("Arial", 10), width=25)
-        self.manual_name.grid(row=0, column=1, padx=(5, 15), pady=5)
+        ctk.CTkLabel(manual_frame, text="Add Guest Manually:", font=("Arial", 13, "bold")).grid(row=0, column=0, columnspan=5, sticky='w', padx=10, pady=(5, 5))
+
+        ctk.CTkLabel(manual_frame, text="Name:", font=("Arial", 12)).grid(row=1, column=0, sticky='w', padx=(10, 0))
+        self.manual_name = ctk.CTkEntry(manual_frame, font=("Arial", 12), width=200)
+        self.manual_name.grid(row=1, column=1, padx=(5, 15), pady=10)
         self.manual_name.bind("<Return>", lambda e: self.add_manual_guest())
 
-        tk.Label(manual_frame, text="Phone:", bg="#f5f5f5", font=("Arial", 10)).grid(row=0, column=2, sticky='w')
-        self.manual_phone = tk.Entry(manual_frame, font=("Arial", 10), width=20)
-        self.manual_phone.grid(row=0, column=3, padx=(5, 15), pady=5)
+        ctk.CTkLabel(manual_frame, text="Phone:", font=("Arial", 12)).grid(row=1, column=2, sticky='w')
+        self.manual_phone = ctk.CTkEntry(manual_frame, font=("Arial", 12), width=150)
+        self.manual_phone.grid(row=1, column=3, padx=(5, 15), pady=10)
         self.manual_phone.bind("<Return>", lambda e: self.add_manual_guest())
 
-        add_btn = tk.Button(
+        add_btn = ctk.CTkButton(
             manual_frame,
             text="➕ Add Guest",
             command=self.add_manual_guest,
-            bg="#667eea",
-            fg="white",
-            font=("Arial", 10, "bold"),
-            padx=15
+            font=("Arial", 12, "bold"),
+            width=120
         )
-        add_btn.grid(row=0, column=4, padx=5)
+        add_btn.grid(row=1, column=4, padx=5, pady=10)
         ToolTip(add_btn, "Add this guest to the list below")
         
-        # Action Buttons (Steps 3 & 4) - Pack at bottom FIRST to ensure visibility
-        action_frame = tk.Frame(tab, bg="#f5f5f5")
-        action_frame.pack(side=tk.BOTTOM, pady=20, padx=20, fill='x')
+        # Action Buttons
+        action_row = ctk.CTkFrame(tab, fg_color="transparent")
+        action_row.pack(side=tk.BOTTOM, pady=20, padx=20, fill='x')
         
-        # Step 3 Frame
-        step3_frame = tk.Frame(action_frame, bg="#f5f5f5")
-        step3_frame.pack(side=tk.LEFT, expand=True)
+        step3_frame = ctk.CTkFrame(action_row)
+        step3_frame.pack(side=tk.LEFT, expand=True, padx=10, fill='both')
         
-        tk.Label(
+        ctk.CTkLabel(
             step3_frame,
             text="Step 3: Update mobile_sender.html",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(pady=(0, 5))
+            font=("Arial", 13, "bold")
+        ).pack(pady=(10, 5), padx=10)
         
-        update_btn = tk.Button(
+        update_btn = ctk.CTkButton(
             step3_frame,
             text="✅ Update mobile_sender.html",
             command=self.update_mobile_sender,
-            bg="#28a745",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            padx=30,
-            pady=10,
-            cursor="hand2"
+            font=("Arial", 12, "bold"),
+            fg_color="#28a745",
+            hover_color="#218838",
+            height=40
         )
-        update_btn.pack()
+        update_btn.pack(pady=(0, 10), padx=10)
         ToolTip(update_btn, "Inject guest list into mobile_sender.html for sending")
         
         # Step 4 Frame
-        step4_frame = tk.Frame(action_frame, bg="#f5f5f5")
-        step4_frame.pack(side=tk.LEFT, expand=True)
+        step4_frame = ctk.CTkFrame(action_row)
+        step4_frame.pack(side=tk.LEFT, expand=True, padx=10, fill='both')
 
-        tk.Label(
+        ctk.CTkLabel(
             step4_frame,
             text="Step 4: Save To...",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(pady=(0, 5))
+            font=("Arial", 13, "bold")
+        ).pack(pady=(10, 5), padx=10)
         
-        save_btn = tk.Button(
+        save_btn = ctk.CTkButton(
             step4_frame,
             text="💾 Save To...",
             command=self.save_mobile_sender,
-            bg="#17a2b8",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            padx=40,
-            pady=10,
-            cursor="hand2"
+            font=("Arial", 12, "bold"),
+            fg_color="#17a2b8",
+            hover_color="#138496",
+            height=40
         )
-        save_btn.pack()
+        save_btn.pack(pady=(0, 10), padx=10)
         ToolTip(save_btn, "Save updated mobile_sender.html to a location of your choice")
 
-        # Guest List Preview (Step 2)
-        preview_frame = tk.Frame(tab, bg="#f5f5f5")
+        # Guest List Preview
+        preview_frame = ctk.CTkFrame(tab)
         preview_frame.pack(pady=10, padx=20, fill='both', expand=True)
         
-        tk.Label(
+        ctk.CTkLabel(
             preview_frame,
             text="Step 2: Preview Guest List",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(anchor='w')
+            font=("Arial", 13, "bold")
+        ).pack(anchor='w', padx=10, pady=(5, 0))
         
-        # Create treeview for guest list
-        columns = ('Name', 'Phone')
-        self.guest_tree = ttk.Treeview(preview_frame, columns=columns, show='headings', height=10)
+        # Header Row
+        header_frame = ctk.CTkFrame(preview_frame, fg_color="transparent")
+        header_frame.pack(fill='x', padx=10, pady=(5,0))
         
-        for col in columns:
-            self.guest_tree.heading(col, text=col)
-            self.guest_tree.column(col, width=200)
-        
-        scrollbar = ttk.Scrollbar(preview_frame, orient=tk.VERTICAL, command=self.guest_tree.yview)
-        self.guest_tree.configure(yscroll=scrollbar.set)
-        
-        self.guest_tree.pack(side=tk.LEFT, fill='both', expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill='y')
-        
-        # Bind double click for editing and keys for deletion
-        self.guest_tree.bind("<Double-1>", self.on_guest_double_click)
-        self.guest_tree.bind("<Delete>", lambda e: self.delete_selected_guests())
-        self.guest_tree.bind("<BackSpace>", lambda e: self.delete_selected_guests())
+        ctk.CTkLabel(header_frame, text="Name", font=("Arial", 12, "bold"), width=300, anchor="w").pack(side=tk.LEFT, padx=10)
+        ctk.CTkLabel(header_frame, text="Phone", font=("Arial", 12, "bold"), width=200, anchor="w").pack(side=tk.LEFT, padx=10)
+        ctk.CTkLabel(header_frame, text="Action", font=("Arial", 12, "bold"), width=50).pack(side=tk.LEFT, padx=10)
 
-        # Deletion Button
-        delete_btn = tk.Button(
-            preview_frame,
-            text="🗑️ Delete Selected Guest(s)",
-            command=self.delete_selected_guests,
-            bg="#dc3545",
-            fg="white",
-            font=("Arial", 10, "bold"),
-            padx=15,
-            pady=5
-        )
-        delete_btn.pack(pady=5, anchor='e')
-        ToolTip(delete_btn, "Remove the highlighted guests from the list")
-    
-    def create_party_details_tab(self):
-        """Tab 2: Party Details"""
-        tab = ttk.Frame(self.notebook)
-        self.notebook.add(tab, text="🎊 Party Details")
+        # Scrollable Guest List Frame
+        self.guest_list_frame = ctk.CTkScrollableFrame(preview_frame, fg_color="transparent")
+        self.guest_list_frame.pack(fill='both', expand=True, padx=5, pady=5)
         
+        # Initial Render
+        self.render_guest_list()
+
+    def render_guest_list(self):
+        """Render the list of guests with individual delete buttons"""
+        # Clear existing
+        for widget in self.guest_list_frame.winfo_children():
+            widget.destroy()
+
+        if not self.guests:
+            ctk.CTkLabel(
+                self.guest_list_frame, 
+                text="No guests added yet.",
+                text_color="#888"
+            ).pack(pady=20)
+            return
+
+        for index, guest in enumerate(self.guests):
+            row_frame = ctk.CTkFrame(self.guest_list_frame)
+            row_frame.pack(fill='x', pady=2, padx=5)
+
+            name_val = guest.get('Name', '')
+            phone_val = str(guest.get('Phone', ''))
+            
+            # Name
+            ctk.CTkLabel(
+                row_frame, 
+                text=name_val, 
+                font=("Arial", 12),
+                width=300,
+                anchor="w"
+            ).pack(side=tk.LEFT, padx=10, pady=5)
+            
+            # Phone
+            ctk.CTkLabel(
+                row_frame, 
+                text=phone_val, 
+                font=("Arial", 12),
+                width=200,
+                anchor="w"
+            ).pack(side=tk.LEFT, padx=10, pady=5)
+            
+            # Delete Button (Trash Icon)
+            delete_btn = ctk.CTkButton(
+                row_frame,
+                text="🗑️",
+                width=40,
+                fg_color="#dc3545",
+                hover_color="#c82333",
+                command=lambda i=index: self.delete_guest(i)
+            )
+            delete_btn.pack(side=tk.LEFT, padx=10, pady=5)
+            ToolTip(delete_btn, "Delete this guest")
+
+    def delete_guest(self, index):
+        """Delete a single guest by index"""
+        if index < 0 or index >= len(self.guests):
+            return
+            
+        guest = self.guests[index]
+        name = guest.get('Name', 'Unknown')
+        
+        if messagebox.askyesno("Confirm Delete", f"Delete {name} from the list?"):
+            self.guests.pop(index)
+            self.render_guest_list()
+            self.update_status(f"Deleted {name}")
+    
+    def create_party_details_tab(self, tab):
+        """Tab 2: Party Details"""
         # Title
-        title = tk.Label(
+        title = ctk.CTkLabel(
             tab,
             text="Party Details Manager",
-            font=("Arial", 18, "bold"),
-            bg="#f5f5f5"
+            font=("Arial", 22, "bold")
         )
         title.pack(pady=10)
         
         # Recent Events Dropdown
         if hasattr(self, 'event_history') and self.event_history:
-            history_frame = tk.Frame(tab, bg="#f5f5f5")
+            history_frame = ctk.CTkFrame(tab)
             history_frame.pack(pady=5, padx=20, fill='x')
             
-            tk.Label(
+            ctk.CTkLabel(
                 history_frame,
                 text="📚 Load from Recent Events:",
-                font=("Arial", 11, "bold"),
-                bg="#f5f5f5"
-            ).pack(side=tk.LEFT, padx=(0, 10))
+                font=("Arial", 12, "bold")
+            ).pack(side=tk.LEFT, padx=10, pady=5)
             
             event_names = [e['name'] for e in self.event_history[:10]]
             self.history_var = tk.StringVar()
@@ -331,91 +361,84 @@ class PartyManagerApp:
                 state='readonly',
                 width=40
             )
-            history_dropdown.pack(side=tk.LEFT)
+            history_dropdown.pack(side=tk.LEFT, padx=10, pady=5)
             history_dropdown.bind('<<ComboboxSelected>>', self.on_history_selected)
             ToolTip(history_dropdown, "Select a previous party to load all its details")
         
-        # Essential Event Info - ALWAYS VISIBLE (needed for calendar/tracking)
-        info_frame = tk.Frame(tab, bg="#f5f5f5")
+        # Essential Event Info
+        info_frame = ctk.CTkFrame(tab)
         info_frame.pack(pady=10, padx=20, fill='x')
         
         # Event Name
-        tk.Label(
+        ctk.CTkLabel(
             info_frame,
-            text="Event Name (Required for Tracking):",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=0, column=0, sticky='w', pady=5)
+            text="Event Name:",
+            font=("Arial", 12, "bold")
+        ).grid(row=0, column=0, sticky='w', pady=10, padx=10)
         
-        self.event_name = tk.Entry(info_frame, font=("Arial", 11), width=50)
-        self.event_name.grid(row=0, column=1, pady=5, sticky='ew')
+        self.event_name = ctk.CTkEntry(info_frame, font=("Arial", 12), width=400)
+        self.event_name.grid(row=0, column=1, pady=10, padx=10, sticky='w')
+        self.event_name.insert(0, "Celebration Night")
         self.event_name.insert(0, "Celebration Night")
         ToolTip(self.event_name, "This name is used to track RSVPs for your event")
         
         # Date
-        tk.Label(
+        ctk.CTkLabel(
             info_frame,
             text="Date (for Calendar):",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=1, column=0, sticky='w', pady=5)
+            font=("Arial", 12, "bold")
+        ).grid(row=1, column=0, sticky='w', pady=10, padx=10)
         
         self.event_date = DateEntry(
             info_frame,
-            font=("Arial", 11),
-            width=37,
+            font=("Arial", 12),
+            width=30,
             background='#667eea',
             foreground='white',
             borderwidth=2,
             date_pattern='yyyy-mm-dd'
         )
-        self.event_date.grid(row=1, column=1, pady=5, sticky='ew')
+        self.event_date.grid(row=1, column=1, pady=10, padx=10, sticky='w')
         ToolTip(self.event_date, "Used to generate the 'Add to Calendar' link for guests")
 
         # Time
-        tk.Label(
+        ctk.CTkLabel(
             info_frame,
             text="Time (for Calendar):",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=2, column=0, sticky='w', pady=5)
+            font=("Arial", 12, "bold")
+        ).grid(row=2, column=0, sticky='w', pady=10, padx=10)
         
-        self.event_time = tk.Entry(info_frame, font=("Arial", 11), width=50)
-        self.event_time.grid(row=2, column=1, pady=5, sticky='ew')
+        self.event_time = ctk.CTkEntry(info_frame, font=("Arial", 12), width=400)
+        self.event_time.grid(row=2, column=1, pady=10, padx=10, sticky='w')
         self.event_time.insert(0, "6:00 PM start")
         ToolTip(self.event_time, "Visible in the calendar invite")
 
         # Location
-        tk.Label(
+        ctk.CTkLabel(
             info_frame,
             text="Location (for Calendar):",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=3, column=0, sticky='w', pady=5)
+            font=("Arial", 12, "bold")
+        ).grid(row=3, column=0, sticky='w', pady=10, padx=10)
         
-        self.event_location = tk.Entry(info_frame, font=("Arial", 11), width=50)
-        self.event_location.grid(row=3, column=1, pady=5, sticky='ew')
+        self.event_location = ctk.CTkEntry(info_frame, font=("Arial", 12), width=400)
+        self.event_location.grid(row=3, column=1, pady=10, padx=10, sticky='w')
         self.event_location.insert(0, "The Martin's Lanai")
         ToolTip(self.event_location, "Location for the calendar invite")
         
         # RSVP Open Toggle
-        tk.Label(
+        ctk.CTkLabel(
             info_frame,
             text="RSVP Status:",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=4, column=0, sticky='w', pady=5)
+            font=("Arial", 12, "bold")
+        ).grid(row=4, column=0, sticky='w', pady=10, padx=10)
         
-        self.rsvp_toggle = tk.Checkbutton(
+        self.rsvp_toggle = ctk.CTkCheckBox(
             info_frame,
             text="RSVP Form is Open & Accepting Responses",
             variable=self.rsvp_open,
-            font=("Arial", 11),
-            bg="#f5f5f5",
-            activebackground="#f5f5f5",
-            cursor="hand2"
+            font=("Arial", 12)
         )
-        self.rsvp_toggle.grid(row=4, column=1, pady=5, sticky='w')
+        self.rsvp_toggle.grid(row=4, column=1, pady=10, padx=10, sticky='w')
         ToolTip(self.rsvp_toggle, "Uncheck this to temporarily disable the RSVP form on your website")
         
         info_frame.columnconfigure(1, weight=1)
@@ -424,110 +447,97 @@ class PartyManagerApp:
         ttk.Separator(tab, orient='horizontal').pack(fill='x', padx=20, pady=10)
         
         # Choice frame
-        choice_frame = tk.Frame(tab, bg="#f5f5f5")
+        choice_frame = ctk.CTkFrame(tab)
         choice_frame.pack(pady=10, padx=20, fill='x')
         
-        tk.Label(
+        ctk.CTkLabel(
             choice_frame,
             text="Choose how to display details on your page:",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(anchor='w', pady=(0, 10))
+            font=("Arial", 13, "bold")
+        ).pack(anchor='w', pady=10, padx=10)
         
         self.detail_choice = tk.StringVar(value="form")
         
-        tk.Radiobutton(
+        ctk.CTkRadioButton(
             choice_frame,
             text="📝 Show text details and description",
             variable=self.detail_choice,
             value="form",
             command=self.toggle_detail_mode,
-            font=("Arial", 11),
-            bg="#f5f5f5",
-            cursor="hand2"
-        ).pack(anchor='w', pady=5)
+            font=("Arial", 12)
+        ).pack(anchor='w', pady=5, padx=20)
         
-        tk.Radiobutton(
+        ctk.CTkRadioButton(
             choice_frame,
             text="🖼️ Show event image (PNG, JPG, etc.)",
             variable=self.detail_choice,
             value="image",
             command=self.toggle_detail_mode,
-            font=("Arial", 11),
-            bg="#f5f5f5",
-            cursor="hand2"
-        ).pack(anchor='w', pady=5)
+            font=("Arial", 12)
+        ).pack(anchor='w', pady=(5, 15), padx=20)
         
-        # Form frame (for manual entry fields)
-        self.form_frame = tk.Frame(tab, bg="#f5f5f5")
+        # Form frame
+        self.form_frame = ctk.CTkFrame(tab)
         self.form_frame.pack(pady=10, padx=20, fill='both', expand=True)
         
-        # Event Description (Subtitle)
-        tk.Label(
+        # Event Description
+        ctk.CTkLabel(
             self.form_frame,
             text="Event Description:",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5"
-        ).grid(row=1, column=0, sticky='nw', pady=5)
+            font=("Arial", 12, "bold")
+        ).grid(row=1, column=0, sticky='nw', pady=10, padx=10)
         
-        self.event_description = tk.Text(self.form_frame, font=("Arial", 11), width=45, height=3, wrap='word')
-        self.event_description.grid(row=1, column=1, pady=5, sticky='ew')
+        self.event_description = ctk.CTkTextbox(self.form_frame, font=("Arial", 12), width=500, height=100, wrap='word')
+        self.event_description.grid(row=1, column=1, pady=10, padx=10, sticky='ew')
         self.event_description.insert('1.0', "Join us for an unforgettable evening of music, drinks, and great company.")
         
         self.form_frame.columnconfigure(1, weight=1)
         
-        # Image frame (hidden by default)
-        self.image_frame = tk.Frame(tab, bg="#f5f5f5")
+        # Image frame
+        self.image_frame = ctk.CTkFrame(tab)
         
-        upload_img_btn = tk.Button(
+        upload_img_btn = ctk.CTkButton(
             self.image_frame,
             text="🖼️ Upload Event Image",
             command=self.upload_event_image,
-            bg="#667eea",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            padx=20,
-            pady=10,
-            cursor="hand2"
+            font=("Arial", 12, "bold"),
+            height=40
         )
         upload_img_btn.pack(pady=20)
         ToolTip(upload_img_btn, "Select a Canva image with all event details")
         
-        self.image_status = tk.Label(
+        self.image_status = ctk.CTkLabel(
             self.image_frame,
             text="No image selected",
-            font=("Arial", 10),
-            fg="#888",
-            bg="#f5f5f5"
+            font=("Arial", 12),
+            text_color="#888"
         )
-        self.image_status.pack()
+        self.image_status.pack(pady=(0, 20))
         
-        # Push button frame (always at bottom, always visible)
-        push_frame = tk.Frame(tab, bg="#f5f5f5")
+        # Push button frame
+        push_frame = ctk.CTkFrame(tab, fg_color="transparent")
         push_frame.pack(side=tk.BOTTOM, pady=20, padx=20)
         
-        self.push_btn = tk.Button(
+        self.push_btn = ctk.CTkButton(
             push_frame,
             text="🚀 Update & Push to GitHub",
             command=self.update_and_push,
-            bg="#28a745",
-            fg="white",
-            font=("Arial", 12, "bold"),
-            padx=30,
-            pady=15,
-            cursor="hand2"
+            font=("Arial", 14, "bold"),
+            fg_color="#28a745",
+            hover_color="#218838",
+            height=50,
+            width=300
         )
         self.push_btn.pack()
         ToolTip(self.push_btn, "Update index.html and deploy to your website (saves to history)")
 
-    def create_cloud_rsvps_tab(self):
-        """Tab 3: Cloud RSVPs (Supabase Integration)"""
-        tab = ttk.Frame(self.notebook)
-        self.notebook.add(tab, text="☁️ Cloud RSVPs")
-        
+    def create_cloud_rsvps_tab(self, tab):
+        """Tab 3: Cloud RSVPs"""
         # Credentials Frame
-        cred_frame = tk.LabelFrame(tab, text="Supabase Connection", font=("Arial", 10, "bold"), bg="#f5f5f5", padx=15, pady=10)
+        cred_frame = ctk.CTkFrame(tab)
         cred_frame.pack(pady=10, padx=20, fill='x')
+        
+        ctk.CTkLabel(cred_frame, text="Supabase Connection", font=("Arial", 13, "bold")).pack(anchor='w', padx=10, pady=(5, 0))
 
         # Try to find credentials from script.js
         default_url = ""
@@ -543,54 +553,56 @@ class PartyManagerApp:
                     if key_match: default_key = key_match.group(1)
         except: pass
 
-        tk.Label(cred_frame, text="URL:", bg="#f5f5f5").grid(row=0, column=0, sticky='w')
-        self.sb_url = tk.Entry(cred_frame, font=("Arial", 9), width=50)
-        self.sb_url.grid(row=0, column=1, padx=10, pady=2)
+        cred_grid = ctk.CTkFrame(cred_frame, fg_color="transparent")
+        cred_grid.pack(fill='x', padx=10, pady=10)
+
+        ctk.CTkLabel(cred_grid, text="URL:", font=("Arial", 12)).grid(row=0, column=0, sticky='w')
+        self.sb_url = ctk.CTkEntry(cred_grid, font=("Arial", 12), width=500)
+        self.sb_url.grid(row=0, column=1, padx=10, pady=5)
         self.sb_url.insert(0, default_url)
 
-        tk.Label(cred_frame, text="Key:", bg="#f5f5f5").grid(row=1, column=0, sticky='w')
-        self.sb_key = tk.Entry(cred_frame, font=("Arial", 9), width=50)
-        self.sb_key.grid(row=1, column=1, padx=10, pady=2)
+        ctk.CTkLabel(cred_grid, text="Key:", font=("Arial", 12)).grid(row=1, column=0, sticky='w')
+        self.sb_key = ctk.CTkEntry(cred_grid, font=("Arial", 12), width=500)
+        self.sb_key.grid(row=1, column=1, padx=10, pady=5)
         self.sb_key.insert(0, default_key)
 
         # Stats Panel
-        self.stats_frame = tk.Frame(tab, bg="#f5f5f5")
+        self.stats_frame = ctk.CTkFrame(tab)
         self.stats_frame.pack(pady=5, padx=20, fill='x')
         
-        self.total_expected_label = tk.Label(
+        self.total_expected_label = ctk.CTkLabel(
             self.stats_frame,
             text="Total Expected: 0",
-            font=("Arial", 14, "bold"),
-            bg="#f5f5f5",
-            fg="#28a745"
+            font=("Arial", 16, "bold"),
+            text_color="#28a745"
         )
-        self.total_expected_label.pack(side=tk.LEFT, padx=10)
+        self.total_expected_label.pack(side=tk.LEFT, padx=20, pady=10)
         
-        self.dietary_alert_label = tk.Label(
+        self.dietary_alert_label = ctk.CTkLabel(
             self.stats_frame,
             text="Dietary Flags: 0",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5",
-            fg="#dc3545"
+            font=("Arial", 14, "bold"),
+            text_color="#dc3545"
         )
-        self.dietary_alert_label.pack(side=tk.LEFT, padx=30)
+        self.dietary_alert_label.pack(side=tk.LEFT, padx=30, pady=10)
 
         # Event Selector Frame
-        select_frame = tk.Frame(tab, bg="#f5f5f5")
+        select_frame = ctk.CTkFrame(tab)
         select_frame.pack(pady=10, padx=20, fill='x')
 
-        refresh_btn = tk.Button(select_frame, text="🔄 Refresh Events", command=self.refresh_cloud_events, bg="#6c757d", fg="white", font=("Arial", 9, "bold"))
-        refresh_btn.pack(side=tk.LEFT, padx=(0, 10))
+        refresh_btn = ctk.CTkButton(select_frame, text="🔄 Refresh Events", command=self.refresh_cloud_events, width=140)
+        refresh_btn.pack(side=tk.LEFT, padx=10, pady=10)
 
-        tk.Label(select_frame, text="Select Event:", bg="#f5f5f5").pack(side=tk.LEFT)
-        self.cloud_event_selector = ttk.Combobox(select_frame, state="readonly", width=40)
-        self.cloud_event_selector.pack(side=tk.LEFT, padx=10)
+        ctk.CTkLabel(select_frame, text="Select Event:", font=("Arial", 12)).pack(side=tk.LEFT, padx=5)
         
-        load_btn = tk.Button(select_frame, text="📥 Load Guests", command=self.load_cloud_guests, bg="#667eea", fg="white", font=("Arial", 9, "bold"))
-        load_btn.pack(side=tk.LEFT)
+        self.cloud_event_selector = ttk.Combobox(select_frame, state="readonly", width=40)
+        self.cloud_event_selector.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        load_btn = ctk.CTkButton(select_frame, text="📥 Load Guests", command=self.load_cloud_guests, width=140)
+        load_btn.pack(side=tk.LEFT, padx=10, pady=10)
 
-        # Data View (Treeview)
-        list_frame = tk.Frame(tab, bg="#f5f5f5")
+        # Data View
+        list_frame = ctk.CTkFrame(tab)
         list_frame.pack(pady=10, padx=20, fill='both', expand=True)
 
         columns = ('Name', 'Count', 'Attending', 'Dietary', 'Message', 'Email')
@@ -615,15 +627,14 @@ class PartyManagerApp:
         sb.pack(side=tk.RIGHT, fill='y')
 
         # Footer
-        import_btn = tk.Button(
+        import_btn = ctk.CTkButton(
             tab,
             text="✅ Import 'Yes' Guests to Manager",
             command=self.import_yes_guests,
-            bg="#28a745",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            padx=30,
-            pady=10
+            font=("Arial", 14, "bold"),
+            fg_color="#28a745",
+            hover_color="#218838",
+            height=45
         )
         import_btn.pack(pady=20)
 
@@ -728,8 +739,8 @@ class PartyManagerApp:
                 self.cloud_tree.insert('', 'end', values=(name, count_val, attending, notes, message, email))
             
             # Update Stats Labels
-            self.total_expected_label.config(text=f"Total Expected: {total_headcount}")
-            self.dietary_alert_label.config(text=f"Dietary Flags: {dietary_count}")
+            self.total_expected_label.configure(text=f"Total Expected: {total_headcount}")
+            self.dietary_alert_label.configure(text=f"Dietary Flags: {dietary_count}")
             
             self.update_status(f"Loaded {len(guests)} RSVPs | Total: {total_headcount} Expected")
         except Exception as e:
@@ -767,42 +778,37 @@ class PartyManagerApp:
                 'Notes': notes
             }
             
+            
             self.guests.append(new_guest)
-            self.guest_tree.insert('', 'end', values=(name, phone))
             count += 1
             
+        self.render_guest_list()
         messagebox.showinfo("Import Success", f"Successfully imported {count} attendees to the Guest List Manager!\n\nDetails (Count/Notes) are preserved in the background data.")
         
         # Switch to first tab
-        self.notebook.select(0)
+        self.tabview.set("📋 Guest List Manager")
         self.update_status(f"Imported {count} guests from cloud")
 
-    def create_broadcasts_tab(self):
+    def create_broadcasts_tab(self, tab):
         """Tab 4: Email Broadcasts"""
-        tab = ttk.Frame(self.notebook)
-        self.notebook.add(tab, text="📨 Broadcasts")
-        
         # Header / Event Selector
-        header_frame = tk.Frame(tab, bg="#f5f5f5")
+        header_frame = ctk.CTkFrame(tab)
         header_frame.pack(pady=20, padx=20, fill='x')
         
-        tk.Label(
+        ctk.CTkLabel(
             header_frame,
             text="Step 1: Select Your Event",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(anchor='w', pady=(0, 10))
+            font=("Arial", 14, "bold")
+        ).pack(anchor='w', pady=(10, 5), padx=10)
         
-        select_frame = tk.Frame(header_frame, bg="#f5f5f5")
-        select_frame.pack(fill='x')
+        select_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        select_frame.pack(fill='x', padx=10, pady=(0, 10))
         
-        refresh_btn = tk.Button(
+        refresh_btn = ctk.CTkButton(
             select_frame, 
             text="🔄 Refresh Events", 
             command=self.refresh_broadcast_events, 
-            bg="#6c757d", 
-            fg="white", 
-            font=("Arial", 9, "bold")
+            width=140
         )
         refresh_btn.pack(side=tk.LEFT, padx=(0, 10))
         
@@ -810,70 +816,66 @@ class PartyManagerApp:
         self.broadcast_event_selector.pack(side=tk.LEFT, padx=10)
         self.broadcast_event_selector.bind('<<ComboboxSelected>>', lambda e: self.load_broadcast_guests())
         
-        self.broadcast_target_label = tk.Label(
+        self.broadcast_target_label = ctk.CTkLabel(
             select_frame, 
             text="Targeting: 0 guests", 
-            font=("Arial", 10, "italic"), 
-            bg="#f5f5f5", 
-            fg="#667eea"
+            font=("Arial", 12, "italic"), 
+            text_color="#667eea"
         )
         self.broadcast_target_label.pack(side=tk.LEFT, padx=20)
 
         # Main Content Area (Side-by-Side)
-        content_row = tk.Frame(tab, bg="#f5f5f5")
+        content_row = ctk.CTkFrame(tab, fg_color="transparent")
         content_row.pack(pady=10, padx=20, fill='both', expand=True)
         
         # Left Column: Compose
-        left_col = tk.Frame(content_row, bg="#f5f5f5")
+        left_col = ctk.CTkFrame(content_row)
         left_col.pack(side=tk.LEFT, fill='both', expand=True, padx=(0, 10))
         
-        tk.Label(
+        ctk.CTkLabel(
             left_col,
             text="Step 2: Compose Your Message",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(anchor='w', pady=(0, 10))
+            font=("Arial", 14, "bold")
+        ).pack(anchor='w', pady=10, padx=15)
 
-        # From Email (New)
-        from_frame = tk.Frame(left_col, bg="#f5f5f5")
-        from_frame.pack(fill='x', pady=(0, 10))
-        tk.Label(from_frame, text="From Email:", font=("Arial", 10, "bold"), bg="#f5f5f5").pack(side=tk.LEFT)
-        self.email_from = tk.Entry(from_frame, font=("Arial", 11))
+        # From Email
+        from_frame = ctk.CTkFrame(left_col, fg_color="transparent")
+        from_frame.pack(fill='x', pady=5, padx=15)
+        ctk.CTkLabel(from_frame, text="From Email:", font=("Arial", 11, "bold")).pack(side=tk.LEFT)
+        self.email_from = ctk.CTkEntry(from_frame, font=("Arial", 12))
         self.email_from.pack(side=tk.LEFT, fill='x', expand=True, padx=(10, 0))
         self.email_from.insert(0, "invites@shmarten.com")
-        ToolTip(self.email_from, "Your verified Resend domain email (e.g., hello@shmarten.com)")
+        ToolTip(self.email_from, "Your verified Resend domain email")
         
         # Subject
-        subject_frame = tk.Frame(left_col, bg="#f5f5f5")
-        subject_frame.pack(fill='x', pady=(0, 10))
-        tk.Label(subject_frame, text="Subject:", font=("Arial", 10, "bold"), bg="#f5f5f5").pack(side=tk.LEFT)
-        self.email_subject = tk.Entry(subject_frame, font=("Arial", 11))
+        subject_frame = ctk.CTkFrame(left_col, fg_color="transparent")
+        subject_frame.pack(fill='x', pady=5, padx=15)
+        ctk.CTkLabel(subject_frame, text="Subject:", font=("Arial", 11, "bold")).pack(side=tk.LEFT)
+        self.email_subject = ctk.CTkEntry(subject_frame, font=("Arial", 12))
         self.email_subject.pack(side=tk.LEFT, fill='x', expand=True, padx=(10, 0))
         self.email_subject.insert(0, "Reminder for our upcoming party!")
 
         # Body
-        self.email_body = scrolledtext.ScrolledText(
+        self.email_body = ctk.CTkTextbox(
             left_col, 
-            font=("Arial", 11), 
-            height=15, 
+            font=("Arial", 12), 
             wrap=tk.WORD
         )
-        self.email_body.pack(fill='both', expand=True)
+        self.email_body.pack(fill='both', expand=True, padx=15, pady=10)
         self.email_body.insert(tk.END, "Hi everyone!\n\nJust a quick reminder about the party. We can't wait to see you there!\n\nBest,\n[Your Name]")
 
         # Right Column: Review
-        right_col = tk.Frame(content_row, bg="#f5f5f5")
+        right_col = ctk.CTkFrame(content_row)
         right_col.pack(side=tk.LEFT, fill='both', expand=True, padx=(10, 0))
 
-        tk.Label(
+        ctk.CTkLabel(
             right_col,
             text="Step 3: Review Recipients & Status",
-            font=("Arial", 12, "bold"),
-            bg="#f5f5f5"
-        ).pack(anchor='w', pady=(0, 10))
+            font=("Arial", 14, "bold")
+        ).pack(anchor='w', pady=10, padx=15)
         
-        table_frame = tk.Frame(right_col, bg="#f5f5f5")
-        table_frame.pack(fill='both', expand=True)
+        table_frame = ctk.CTkFrame(right_col, fg_color="transparent")
+        table_frame.pack(fill='both', expand=True, padx=15, pady=(0, 15))
         
         columns = ('Name', 'Email', 'Status')
         self.broadcast_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=10)
@@ -891,31 +893,29 @@ class PartyManagerApp:
         bsb.pack(side=tk.RIGHT, fill='y')
 
         # Footer / Send
-        footer_frame = tk.Frame(tab, bg="#f5f5f5")
-        footer_frame.pack(side=tk.BOTTOM, pady=30, padx=20, fill='x')
+        footer_frame = ctk.CTkFrame(tab, fg_color="transparent")
+        footer_frame.pack(side=tk.BOTTOM, pady=20, padx=20, fill='x')
         
-        self.broadcast_status_label = tk.Label(
+        self.broadcast_status_label = ctk.CTkLabel(
             footer_frame,
             text="Ready to send",
-            font=("Arial", 11, "bold"),
-            bg="#f5f5f5",
-            fg="#6c757d"
+            font=("Arial", 14, "bold"),
+            text_color="#888"
         )
-        self.broadcast_status_label.pack(pady=(0, 15))
+        self.broadcast_status_label.pack(pady=(0, 10))
         
-        self.send_broadcast_btn = tk.Button(
+        self.send_broadcast_btn = ctk.CTkButton(
             footer_frame,
             text="🚀 Send to Confirmed Attendees",
             command=self.send_broadcast_emails,
-            bg="#667eea",
-            fg="white",
-            font=("Arial", 12, "bold"),
-            padx=50,
-            pady=15,
-            cursor="hand2",
-            state='disabled' # Enable once event is selected
+            font=("Arial", 14, "bold"),
+            fg_color="#667eea",
+            hover_color="#5a67d8",
+            height=50,
+            width=400,
+            state='disabled'
         )
-        self.send_broadcast_btn.pack()
+        self.send_broadcast_btn.pack(pady=10)
         ToolTip(self.send_broadcast_btn, "Blast this email to everyone who RSVP'd 'Yes' for the selected event")
 
     def refresh_broadcast_events(self):
@@ -1013,12 +1013,12 @@ class PartyManagerApp:
                 f"[Your Name]"
             )
             count = len(self.broadcast_guests)
-            self.broadcast_target_label.config(text=f"Targeting: {count} guests with emails")
+            self.broadcast_target_label.configure(text=f"Targeting: {count} guests with emails")
             
             if count > 0:
-                self.send_broadcast_btn.config(state='normal', bg="#667eea")
+                self.send_broadcast_btn.configure(state='normal', fg_color="#667eea")
             else:
-                self.send_broadcast_btn.config(state='disabled', bg="#cccccc")
+                self.send_broadcast_btn.configure(state='disabled', fg_color="#444")
                 
         except Exception as e:
             messagebox.showerror("Supabase Error", str(e))
@@ -1063,7 +1063,7 @@ class PartyManagerApp:
             return
 
         # Start background thread for sending
-        self.send_broadcast_btn.config(state='disabled', text="⌛ Sending...")
+        self.send_broadcast_btn.configure(state='disabled', text="⌛ Sending...")
         thread = threading.Thread(target=self._broadcast_worker, args=(resend_key, sender, subject, body))
         thread.start()
 
@@ -1082,7 +1082,7 @@ class PartyManagerApp:
             name = guest['name']
             
             try:
-                self.broadcast_status_label.config(text=f"Sending to {name} ({i}/{total})...", fg="#667eea")
+                self.broadcast_status_label.configure(text=f"Sending to {name} ({i}/{total})...", text_color="#667eea")
                 self.broadcast_tree.set(item_id, column='Status', value="Sending...")
                 self.broadcast_tree.see(item_id)
                 self.broadcast_tree.selection_set(item_id)
@@ -1106,28 +1106,21 @@ class PartyManagerApp:
             time.sleep(0.1)
 
         # Final UI update
-        self.broadcast_status_label.config(text=f"Done! {sent_count} sent, {fail_count} failed", fg="#28a745")
-        self.send_broadcast_btn.config(state='normal', text="🚀 Send to Confirmed Attendees")
+        self.broadcast_status_label.configure(text=f"Done! {sent_count} sent, {fail_count} failed", text_color="#28a745")
+        self.send_broadcast_btn.configure(state='normal', text="🚀 Send to Confirmed Attendees")
         messagebox.showinfo("Blast Complete!", f"Email campaign finished!\n\nSuccessfully sent: {sent_count}\nFailed/Skipped: {fail_count}")
 
-    def create_help_tab(self):
+    def create_help_tab(self, tab):
         """Tab 5: User Guide & Help"""
-        tab = ttk.Frame(self.notebook)
-        self.notebook.add(tab, text="📖 User Guide & Help")
-        
-        # Text container
-        help_frame = tk.Frame(tab, bg="white")
+        help_frame = ctk.CTkFrame(tab)
         help_frame.pack(fill='both', expand=True, padx=20, pady=20)
         
-        help_text = scrolledtext.ScrolledText(
+        help_text = ctk.CTkTextbox(
             help_frame, 
             wrap=tk.WORD, 
-            font=("Segoe UI", 11),
-            bg="white",
-            fg="#333",
+            font=("Arial", 12),
             padx=20,
-            pady=20,
-            borderwidth=0
+            pady=20
         )
         help_text.pack(fill='both', expand=True)
         
@@ -1183,7 +1176,7 @@ This tool helps you manage your guest list and party website effortlessly.
 Need more help? Check the 'docs' folder in your project directory!
 """
         help_text.insert(tk.END, content)
-        help_text.configure(state='disabled') # Make it read-only
+        help_text.configure(state='disabled')
     
     def toggle_detail_mode(self):
         """Toggle between form and image mode"""
@@ -1298,9 +1291,9 @@ Need more help? Check the 'docs' folder in your project directory!
         
         if file_path:
             self.event_image_path = file_path
-            self.image_status.config(
+            self.image_status.configure(
                 text=f"✅ {os.path.basename(file_path)}",
-                fg="#28a745"
+                text_color="#28a745"
             )
             self.update_status(f"Event image selected: {os.path.basename(file_path)}")
     
@@ -1356,76 +1349,17 @@ Need more help? Check the 'docs' folder in your project directory!
 
         guest = {'Name': name, 'Phone': phone}
         self.guests.append(guest)
-        self.guest_tree.insert('', 'end', values=(name, phone))
+        self.render_guest_list()
         
         # Clear fields
         self.manual_name.delete(0, tk.END)
         self.manual_phone.delete(0, tk.END)
         self.update_status(f"Added guest: {name}")
 
-    def delete_selected_guests(self):
-        """Delete highlighted guests from tree and list"""
-        selected_items = self.guest_tree.selection()
-        if not selected_items:
-            return
-
-        if not messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {len(selected_items)} guest(s)?"):
-            return
-
-        for item in selected_items:
-            values = self.guest_tree.item(item, 'values')
-            # Remove from self.guests
-            self.guests = [g for g in self.guests if not (str(g.get('Name')) == str(values[0]) and str(g.get('Phone')).replace('.0', '') == str(values[1]))]
-            # Remove from Treeview
-            self.guest_tree.delete(item)
-        
-        self.update_status(f"Deleted {len(selected_items)} guest(s)")
-
-    def on_guest_double_click(self, event):
-        """Open edit dialog on double click"""
-        item = self.guest_tree.identify_row(event.y)
-        if not item:
-            return
-
-        values = self.guest_tree.item(item, 'values')
-        
-        # Create edit window
-        edit_win = tk.Toplevel(self.root)
-        edit_win.title("Edit Guest")
-        edit_win.geometry("300x200")
-        edit_win.configure(bg="#f5f5f5")
-        edit_win.transient(self.root)
-        edit_win.grab_set()
-
-        tk.Label(edit_win, text="Name:", bg="#f5f5f5").pack(pady=(20, 0))
-        name_ent = tk.Entry(edit_win, font=("Arial", 10), width=30)
-        name_ent.pack(pady=5)
-        name_ent.insert(0, values[0])
-
-        tk.Label(edit_win, text="Phone:", bg="#f5f5f5").pack()
-        phone_ent = tk.Entry(edit_win, font=("Arial", 10), width=30)
-        phone_ent.pack(pady=5)
-        phone_ent.insert(0, values[1])
-
-        def save_edit():
-            new_name = name_ent.get().strip()
-            new_phone = phone_ent.get().strip()
-            if not new_name or not new_phone:
-                return
-            
-            # Update self.guests
-            for g in self.guests:
-                if str(g.get('Name')) == str(values[0]) and str(g.get('Phone')).replace('.0', '') == str(values[1]):
-                    g['Name'] = new_name
-                    g['Phone'] = new_phone
-                    break
-            
-            # Update Treeview
-            self.guest_tree.item(item, values=(new_name, new_phone))
-            edit_win.destroy()
-            self.update_status(f"Updated guest: {new_name}")
-
-        tk.Button(edit_win, text="💾 Save Changes", command=save_edit, bg="#28a745", fg="white", font=("Arial", 10, "bold"), padx=10, pady=5).pack(pady=10)
+    def old_methods_removed(self):
+        # Previously delete_selected_guests and on_guest_double_click were here.
+        # They have been replaced by delete_guest(index) and the on-row delete button.
+        pass
 
     def update_with_form_data(self, content):
         """Update HTML content with form data"""
@@ -1561,7 +1495,7 @@ Need more help? Check the 'docs' folder in your project directory!
     def update_status(self, message):
         """Update status bar with timestamp"""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        self.status_bar.config(text=f"{message} | {timestamp}")
+        self.status_bar.configure(text=f" {message} | {timestamp}")
         self.root.update_idletasks()
     
     # ===== EVENT HISTORY METHODS =====
@@ -1711,29 +1645,13 @@ Need more help? Check the 'docs' folder in your project directory!
                 self.update_status(f"Appended {len(new_guests)} guests")
             else:
                 self.guests = new_guests
-                # Clear and populate treeview
-                for item in self.guest_tree.get_children():
-                    self.guest_tree.delete(item)
                 self.update_status(f"Loaded {len(self.guests)} guests")
 
-            # Refresh Treeview
-            if self.guests == new_guests: # If we overwrote or it was empty
-                pass # Already cleared above
-            else: # If we appended, we need to add just the new ones
-                for guest in new_guests:
-                    name = guest.get('Name', '')
-                    phone = str(guest.get('Phone', '')).replace('.0', '')
-                    self.guest_tree.insert('', 'end', values=(name, phone))
-                return # Skip the default refresh below
-
-            for guest in self.guests:
-                name = guest.get('Name', '')
-                phone = str(guest.get('Phone', '')).replace('.0', '')
-                self.guest_tree.insert('', 'end', values=(name, phone))
+            self.render_guest_list()
             
-            self.csv_status.config(
+            self.csv_status.configure(
                 text=f"✅ {len(self.guests)} guests total (linked to {os.path.basename(file_path)})",
-                fg="#28a745"
+                text_color="#28a745"
             )
             self.update_status(f"Loaded {len(self.guests)} guests")
             
