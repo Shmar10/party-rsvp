@@ -60,13 +60,27 @@ class PartyManagerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("🎉 Party Manager v2.0")
-        self.root.geometry("1100x850")
+        self.root.title("🎉 Party Manager v2.0")
+        
+        # maximize window based on os
+        if os.name == 'nt': # Windows
+             self.root.state('zoomed')
+        else:
+             # Linux/Mac (fallback)
+             screen_width = self.root.winfo_screenwidth()
+             screen_height = self.root.winfo_screenheight()
+             self.root.geometry(f"{screen_width}x{screen_height}")
+
+        # Ensure it doesn't get too small
+        self.root.minsize(1100, 850)
         
         # Get project directory
         self.project_dir = os.getcwd()
         
         # Event history file
         self.history_file = os.path.join(self.project_dir, ".party_events_history.json")
+        self.event_history = [] # Initialize empty
+        self.load_event_history() # Load immediately
         
         # Guest list data
         self.guests = []
@@ -89,6 +103,7 @@ class PartyManagerApp:
         
         # Add tabs
         self.tab_guest_list = self.tabview.add("📋 Guest List Manager")
+        self.tab_events = self.tabview.add("🎉 Events Manager")
         self.tab_party_details = self.tabview.add("🎊 Party Details")
         self.tab_cloud_rsvps = self.tabview.add("☁️ Cloud RSVPs")
         self.tab_broadcasts = self.tabview.add("📨 Broadcasts")
@@ -96,13 +111,11 @@ class PartyManagerApp:
         
         # Initialize tabs
         self.create_guest_list_tab(self.tab_guest_list)
+        self.create_events_manager_tab(self.tab_events)
         self.create_party_details_tab(self.tab_party_details)
         self.create_cloud_rsvps_tab(self.tab_cloud_rsvps)
         self.create_broadcasts_tab(self.tab_broadcasts)
         self.create_help_tab(self.tab_help)
-        
-        # Load event history
-        self.load_event_history()
         
         # Status bar with timestamp
         self.status_bar = ctk.CTkLabel(
@@ -330,6 +343,81 @@ class PartyManagerApp:
             self.render_guest_list()
             self.update_status(f"Deleted {name}")
     
+    def create_events_manager_tab(self, tab):
+        """Tab 2: Events Manager"""
+        ctk.CTkLabel(tab, text="Events Manager", font=("Arial", 22, "bold")).pack(pady=10)
+        
+        # Header
+        header_frame = ctk.CTkFrame(tab, fg_color="transparent")
+        header_frame.pack(fill='x', padx=20, pady=(5,0))
+        
+        ctk.CTkLabel(header_frame, text="Event Name", font=("Arial", 12, "bold"), width=300, anchor="w").pack(side=tk.LEFT, padx=10)
+        ctk.CTkLabel(header_frame, text="Date", font=("Arial", 12, "bold"), width=150, anchor="w").pack(side=tk.LEFT, padx=10)
+        ctk.CTkLabel(header_frame, text="Actions", font=("Arial", 12, "bold"), width=200).pack(side=tk.LEFT, padx=10)
+        # Refresh button on right
+        ctk.CTkButton(header_frame, text="🔄", width=40, command=self.render_event_list).pack(side=tk.RIGHT, padx=10)
+
+        # Scrollable List
+        self.events_list_frame = ctk.CTkScrollableFrame(tab)
+        self.events_list_frame.pack(fill='both', expand=True, padx=20, pady=5)
+        
+        self.render_event_list()
+
+    def render_event_list(self):
+        """Render list of events from history"""
+        for widget in self.events_list_frame.winfo_children():
+            widget.destroy()
+
+        if not self.event_history:
+            ctk.CTkLabel(self.events_list_frame, text="No saved events found.", text_color="#888").pack(pady=20)
+            return
+
+        for index, event in enumerate(self.event_history):
+            row = ctk.CTkFrame(self.events_list_frame)
+            row.pack(fill='x', pady=5, padx=5)
+            
+            name = event.get('name', 'Unnamed Event')
+            date = event.get('date', 'No Date')
+            
+            ctk.CTkLabel(row, text=name, font=("Arial", 13, "bold"), width=300, anchor="w").pack(side=tk.LEFT, padx=10)
+            ctk.CTkLabel(row, text=date, font=("Arial", 12), width=150, anchor="w").pack(side=tk.LEFT, padx=10)
+            
+            # Actions
+            # Load
+            ctk.CTkButton(row, text="✏️ Load", width=80, fg_color="#667eea", command=lambda e=event: self.load_event_handler(e)).pack(side=tk.LEFT, padx=5)
+            # Copy
+            ctk.CTkButton(row, text="📋 Copy", width=80, fg_color="#17a2b8", command=lambda e=event: self.copy_event_handler(e)).pack(side=tk.LEFT, padx=5)
+            # Delete
+            ctk.CTkButton(row, text="🗑️", width=40, fg_color="#dc3545", command=lambda i=index: self.delete_event_handler(i)).pack(side=tk.LEFT, padx=5)
+
+    def load_event_handler(self, event):
+        """Load event and switch to details tab"""
+        self.load_event_from_history(event)
+        self.tabview.set("🎊 Party Details")
+        self.update_status(f"Loaded: {event.get('name')}")
+
+    def copy_event_handler(self, event):
+        """Duplicate an event"""
+        new_event = event.copy()
+        new_event['name'] = f"{new_event['name']} (Copy)"
+        new_event['timestamp'] = datetime.now().isoformat()
+        
+        self.event_history.insert(0, new_event)
+        self.save_history_file()
+        self.render_event_list()
+        self.update_status(f"Copied event to {new_event['name']}")
+
+    def delete_event_handler(self, index):
+        """Delete event by index"""
+        if index < 0 or index >= len(self.event_history): return
+        
+        name = self.event_history[index].get('name', 'Event')
+        if messagebox.askyesno("Delete Event", f"Are you sure you want to delete '{name}'?"):
+            self.event_history.pop(index)
+            self.save_history_file()
+            self.render_event_list()
+            self.update_status(f"Deleted {name}")
+
     def create_party_details_tab(self, tab):
         """Tab 2: Party Details"""
         # Title
@@ -514,10 +602,29 @@ class PartyManagerApp:
         )
         self.image_status.pack(pady=(0, 20))
         
-        # Push button frame
+        # Push/Save button frame
         push_frame = ctk.CTkFrame(tab, fg_color="transparent")
-        push_frame.pack(side=tk.BOTTOM, pady=20, padx=20)
+        push_frame.pack(side=tk.BOTTOM, pady=20, padx=20, fill='x')
         
+        # New Event Button (Left)
+        ctk.CTkButton(
+            push_frame, 
+            text="✨ New Event", 
+            command=self.new_event,
+            fg_color="#6c757d", 
+            width=120
+        ).pack(side=tk.LEFT, padx=10)
+
+        # Save Draft Button (Left)
+        ctk.CTkButton(
+            push_frame, 
+            text="💾 Save Draft", 
+            command=self.save_draft,
+            fg_color="#17a2b8", 
+            width=120
+        ).pack(side=tk.LEFT, padx=10)
+
+        # Update & Push (Right/Center)
         self.push_btn = ctk.CTkButton(
             push_frame,
             text="🚀 Update & Push to GitHub",
@@ -526,9 +633,9 @@ class PartyManagerApp:
             fg_color="#28a745",
             hover_color="#218838",
             height=50,
-            width=300
+            width=260
         )
-        self.push_btn.pack()
+        self.push_btn.pack(side=tk.RIGHT, padx=10, fill='x', expand=True)
         ToolTip(self.push_btn, "Update index.html and deploy to your website (saves to history)")
 
     def create_cloud_rsvps_tab(self, tab):
@@ -1527,14 +1634,38 @@ Need more help? Check the 'docs' folder in your project directory!
         self.event_history.insert(0, event_data)
         
         # Keep only last 10
-        self.event_history = self.event_history[:10]
-        
         # Save to file
+        self.save_history_file()
+
+        # Update Events Tab if it exists
+        if hasattr(self, 'render_event_list'):
+            self.render_event_list()
+    
+    def save_history_file(self):
+        """Write self.event_history to JSON file"""
         try:
             with open(self.history_file, 'w') as f:
                 json.dump(self.event_history, f, indent=2)
         except Exception as e:
             print(f"Could not save history: {e}")
+
+    def save_draft(self):
+        """Save current details to history without pushing"""
+        self.save_event_to_history()
+        messagebox.showinfo("Saved", "Event draft saved to Events Manager!")
+        self.update_status("Draft saved locally")
+
+    def new_event(self):
+        """Clear fields for a new event"""
+        if messagebox.askyesno("New Event", "Clear all fields for a new event?"):
+            self.event_name.delete(0, tk.END)
+            self.event_name.insert(0, "New Event")
+            self.event_description.delete('1.0', tk.END)
+            self.event_time.delete(0, tk.END)
+            self.event_location.delete(0, tk.END)
+            self.event_image_path = None
+            self.image_status.configure(text="No image selected", text_color="#888")
+            self.update_status("Fields cleared for new event")
     
     def load_event_from_history(self, event):
         """Load event details from history"""
